@@ -1,3 +1,4 @@
+
 package com.financetracker.view;
 
 import com.financetracker.controller.UserController;
@@ -718,3 +719,4 @@ public class LoginFrame extends JFrame {
         SwingUtilities.updateComponentTreeUI(this);
     }
 }
+

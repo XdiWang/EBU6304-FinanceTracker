@@ -1,3 +1,4 @@
+
 package com.financetracker.view;
 
 import com.financetracker.model.Account;
@@ -641,3 +642,4 @@ public class AccountPanel extends JPanel {
         }
     }
 }
+
