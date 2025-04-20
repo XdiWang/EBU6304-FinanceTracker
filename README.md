@@ -1,3 +1,88 @@
+# AI-Powered Personal Finance Tracker
+
+An intelligent personal finance management application developed with Java Swing, integrating AI technology to provide spending analysis and financial advice.
+
+## Features
+
+- **Multi-Account Management**: Manage multiple accounts such as bank accounts, Alipay, WeChat Pay, etc.
+- **Smart Transaction Categorization**: AI automatically categorizes transactions
+- **Expense Analysis**: Visual representation of spending categories and consumption trends
+- **Budget Planning**: Set daily and monthly budget limits
+- **AI Assistant**: Provides personalized financial advice and spending analysis
+- **Data Import/Export**: Supports CSV and PDF formats
+
+## Technology Stack
+
+- Java Swing: Building the user interface
+- JFreeChart: Data visualization
+- Apache Commons CSV: Processing CSV files
+- Jackson: Processing JSON data
+- DeepLearning4j: AI functionality support
+
+## System Architecture
+
+Designed using MVC (Model-View-Controller) architecture:
+
+- **Model Layer**: Contains core data models for users, accounts, transactions, and categories
+- **View Layer**: Includes login interface, main window, dashboard, account management, and AI chat interface
+- **Controller Layer**: Handles user authentication and business logic
+
+## User Interface
+
+- **Login/Registration Interface**: User authentication
+- **Dashboard**: Displays monthly income and expense overview and trend charts
+- **Expense Overview**: Pie charts showing the proportion of various expenses
+- **Account Management**: Manage multiple accounts and transaction records
+- **AI Chat**: Chat with AI assistant for financial advice
+
+## System Requirements
+
+- Java 11 or higher
+- Recommended screen resolution: 1280x720 or higher
+
+## Installation and Running
+
+1. Ensure Java 11+ is installed
+2. Clone the repository: `git clone '
+3. Enter the project directory: `cd finance-tracker`
+4. Build the project with Maven: `mvn package`
+5. Run the application: `java -jar target/finance-tracker-1.0-SNAPSHOT-jar-with-dependencies.jar`
+
+## Developer Guide
+
+### Project Structure
+
+```
+src/main/java/com/financetracker/
+├── controller/    # Controller classes
+├── model/         # Data model classes
+├── service/       # Service classes
+├── util/          # Utility classes
+├── view/          # View classes
+└── FinanceTrackerApp.java  # Program entry
+```
+
+### Build Instructions
+
+The project uses Maven to manage dependencies and can be built with the following command:
+
+```
+mvn clean package
+```
+
+## Future Planned Features
+
+- Cloud Synchronization: Support data synchronization across multiple devices
+- Consumption Prediction: Using machine learning to predict future consumption trends
+- Scheduled Reminders: Budget overspending and bill reminders
+- Multi-language Support: More language options
+
+## License
+
+This project is licensed under the MIT License.
+
+---
+
 # AI赋能个人财务追踪器
 
 一个智能化的个人财务管理应用，基于Java Swing开发，结合AI技术提供消费分析和财务建议。
