@@ -1,3 +1,4 @@
+
 package com.financetracker.view;
 
 import com.financetracker.model.User;
@@ -15,6 +16,10 @@ import java.util.logging.Logger;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.ButtonGroup;
+import java.awt.RenderingHints;
+import javax.swing.plaf.basic.BasicToggleButtonUI;
+import javax.swing.AbstractButton;
+import javax.swing.ButtonModel;
 
 /**
  * 应用程序的主窗口
@@ -57,11 +62,47 @@ public class MainFrame extends JFrame {
 
     public MainFrame(User user) {
         this.currentUser = user;
+
         // 设置用户的语言偏好
-        LanguageUtil.setCurrentLanguage(user.getPreferredLanguage());
+        if (user.getPreferredLanguage() != null) {
+            LanguageUtil.setCurrentLanguage(user.getPreferredLanguage());
+        } else {
+            // 默认使用中文
+            LanguageUtil.setCurrentLanguage(LanguageUtil.CHINESE);
+        }
+
+        // 打印当前语言以便调试
+        System.out.println("当前语言: " + (LanguageUtil.getCurrentLanguage().equals(LanguageUtil.CHINESE) ? "中文" : "英文"));
+
         initComponents();
         setupUI();
         updateLanguage();
+
+        // 直接打印菜单标题的当前文本，用于调试
+        System.out.println("文件菜单文本: " + fileMenu.getText());
+        System.out.println("视图菜单文本: " + viewMenu.getText());
+        System.out.println("语言菜单文本: " + languageMenu.getText());
+
+        // 如果当前界面菜单未能正确翻译，添加调试信息并尝试强制重新加载
+        if (fileMenu.getText().equals("menu.file") || viewMenu.getText().equals("menu.view")) {
+            System.out.println("检测到菜单未能正确翻译，强制重新加载...");
+
+            // 强制设置菜单文本 - 中文模式
+            if (LanguageUtil.getCurrentLanguage().equals(LanguageUtil.CHINESE)) {
+                fileMenu.setText("文件");
+                viewMenu.setText("视图");
+                languageMenu.setText("语言");
+                helpMenu.setText("帮助");
+            } else { // 英文模式
+                fileMenu.setText("File");
+                viewMenu.setText("View");
+                languageMenu.setText("Language");
+                helpMenu.setText("Help");
+            }
+
+            // 重新刷新UI
+            SwingUtilities.updateComponentTreeUI(this);
+        }
     }
 
     private void initComponents() {
@@ -129,12 +170,23 @@ public class MainFrame extends JFrame {
         JMenuBar menuBar = new JMenuBar();
         menuBar.setBackground(Color.WHITE);
 
+        // 增加菜单项之间的距离
+        menuBar.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+
         // 获取推荐的中文字体
         Font menuFont = FontLoader.getFont(14, Font.PLAIN);
 
-        // 文件菜单
-        fileMenu = new JMenu(LanguageUtil.getText("menu.file"));
+        // 检查当前语言
+        boolean isEnglish = LanguageUtil.getCurrentLanguage().equals(LanguageUtil.ENGLISH);
+
+        // 文件菜单 - 根据语言决定是否替换点号
+        String fileText = LanguageUtil.getText("menu.file");
+        if (isEnglish) {
+            fileText = fileText.replace(".", " ");
+        }
+        fileMenu = new JMenu(fileText);
         fileMenu.setFont(menuFont);
+        fileMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
 
         importMenuItem = new JMenuItem(LanguageUtil.getText("file.import"));
         importMenuItem.setFont(menuFont);
@@ -159,8 +211,13 @@ public class MainFrame extends JFrame {
         fileMenu.add(exitMenuItem);
 
         // 视图菜单
-        viewMenu = new JMenu(LanguageUtil.getText("menu.view"));
+        String viewText = LanguageUtil.getText("menu.view");
+        if (isEnglish) {
+            viewText = viewText.replace(".", " ");
+        }
+        viewMenu = new JMenu(viewText);
         viewMenu.setFont(menuFont);
+        viewMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
 
         JMenuItem dashboardMenuItem = new JMenuItem(LanguageUtil.getText("main.dashboard"));
         dashboardMenuItem.setFont(menuFont);
@@ -184,8 +241,13 @@ public class MainFrame extends JFrame {
         viewMenu.add(aiChatMenuItem);
 
         // 语言菜单
-        languageMenu = new JMenu(LanguageUtil.getText("menu.language"));
+        String languageText = LanguageUtil.getText("menu.language");
+        if (isEnglish) {
+            languageText = languageText.replace(".", " ");
+        }
+        languageMenu = new JMenu(languageText);
         languageMenu.setFont(menuFont);
+        languageMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
 
         ButtonGroup languageGroup = new ButtonGroup();
 
@@ -215,8 +277,13 @@ public class MainFrame extends JFrame {
         languageMenu.add(chineseMenuItem);
 
         // 帮助菜单
-        helpMenu = new JMenu(LanguageUtil.getText("menu.help"));
+        String helpText = LanguageUtil.getText("menu.help");
+        if (isEnglish) {
+            helpText = helpText.replace(".", " ");
+        }
+        helpMenu = new JMenu(helpText);
         helpMenu.setFont(menuFont);
+        helpMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
 
         JMenuItem aboutMenuItem = new JMenuItem(LanguageUtil.getText("menu.about"));
         aboutMenuItem.setFont(menuFont);
@@ -242,7 +309,7 @@ public class MainFrame extends JFrame {
         JToolBar toolBar = new JToolBar();
         toolBar.setFloatable(false);
         toolBar.setBackground(Color.WHITE);
-        toolBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        toolBar.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
         // 获取推荐的中文字体
         Font buttonFont = FontLoader.getFont(14, Font.PLAIN);
@@ -260,39 +327,101 @@ public class MainFrame extends JFrame {
         navButtonGroup.add(accountButton);
         navButtonGroup.add(aiChatButton);
 
-        // 设置按钮样式
+        // 设置按钮样式 - 改为更Apple风格的设计
+        Color accentColor = new Color(0, 122, 255); // Apple blue
+
         dashboardButton.setFont(buttonFont);
         overviewButton.setFont(buttonFont);
         accountButton.setFont(buttonFont);
         aiChatButton.setFont(buttonFont);
 
-        dashboardButton.setFocusPainted(false);
-        overviewButton.setFocusPainted(false);
-        accountButton.setFocusPainted(false);
-        aiChatButton.setFocusPainted(false);
+        // 设置所有按钮的共同样式
+        JToggleButton[] buttons = { dashboardButton, overviewButton, accountButton, aiChatButton };
+        for (JToggleButton button : buttons) {
+            button.setFocusPainted(false);
+            button.setBorderPainted(false);
+            button.setContentAreaFilled(false);
+            button.setBackground(Color.WHITE);
+            button.setForeground(new Color(60, 60, 60));
+            button.setBorder(BorderFactory.createEmptyBorder(6, 15, 6, 15));
 
-        dashboardButton.setBackground(Color.WHITE);
-        overviewButton.setBackground(Color.WHITE);
-        accountButton.setBackground(Color.WHITE);
-        aiChatButton.setBackground(Color.WHITE);
+            // 添加鼠标悬停和选中效果
+            button.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    if (!button.isSelected()) {
+                        button.setForeground(accentColor);
+                    }
+                }
 
-        // 设置选中时的背景色
-        UIManager.put("ToggleButton.select", new Color(230, 240, 250));
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    if (!button.isSelected()) {
+                        button.setForeground(new Color(60, 60, 60));
+                    }
+                }
+            });
 
-        // 添加按钮到工具栏
+            // 自定义绘制组件，添加底部指示线
+            button.setUI(new BasicToggleButtonUI() {
+                @Override
+                public void paint(Graphics g, JComponent c) {
+                    Graphics2D g2d = (Graphics2D) g.create();
+                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    AbstractButton button = (AbstractButton) c;
+                    ButtonModel model = button.getModel();
+
+                    // 绘制文字
+                    FontMetrics fm = g2d.getFontMetrics();
+                    Rectangle textRect = new Rectangle(0, 0, c.getWidth(), c.getHeight());
+
+                    // 设置文字颜色
+                    if (model.isSelected()) {
+                        g2d.setColor(accentColor);
+                    } else if (model.isRollover()) {
+                        g2d.setColor(accentColor);
+                    } else {
+                        g2d.setColor(new Color(60, 60, 60));
+                    }
+
+                    String text = button.getText();
+                    int textX = (c.getWidth() - fm.stringWidth(text)) / 2;
+                    int textY = (c.getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                    g2d.drawString(text, textX, textY);
+
+                    // 如果按钮被选中，添加底部指示线
+                    if (model.isSelected()) {
+                        int lineHeight = 2;
+                        int lineWidth = fm.stringWidth(text);
+                        int lineX = textX;
+                        int lineY = c.getHeight() - lineHeight - 2;
+
+                        g2d.setColor(accentColor);
+                        g2d.fillRect(lineX, lineY, lineWidth, lineHeight);
+                    }
+
+                    g2d.dispose();
+                }
+            });
+        }
+
+        // 为工具栏添加分隔符和按钮
+        toolBar.addSeparator(new Dimension(10, 0));
         toolBar.add(dashboardButton);
+        toolBar.addSeparator(new Dimension(5, 0));
         toolBar.add(overviewButton);
+        toolBar.addSeparator(new Dimension(5, 0));
         toolBar.add(accountButton);
+        toolBar.addSeparator(new Dimension(5, 0));
         toolBar.add(aiChatButton);
+        toolBar.addSeparator(new Dimension(10, 0));
 
         // 添加按钮事件监听器
         dashboardButton.addActionListener(e -> showPanel("dashboard"));
         overviewButton.addActionListener(e -> showPanel("overview"));
         accountButton.addActionListener(e -> showPanel("account"));
         aiChatButton.addActionListener(e -> showPanel("aichat"));
-
-        // 默认选中仪表盘按钮
-        dashboardButton.setSelected(true);
 
         return toolBar;
     }
@@ -319,8 +448,10 @@ public class MainFrame extends JFrame {
                     titleLabel.setText(LanguageUtil.getText("main.dashboard"));
                     titleLabel.setFont(FontLoader.getFont(16, Font.BOLD));
                 }
-                viewMenu.setText(
-                        LanguageUtil.getText("menu.view") + " (" + LanguageUtil.getText("main.dashboard") + ")");
+                viewMenu.setText(LanguageUtil.getText("menu.view"));
+                if (LanguageUtil.getCurrentLanguage().equals(LanguageUtil.ENGLISH)) {
+                    viewMenu.setText(viewMenu.getText().replace(".", " "));
+                }
                 if (dashboardPanel != null) {
                     try {
                         dashboardPanel.getClass().getMethod("onActivate").invoke(dashboardPanel);
@@ -336,14 +467,9 @@ public class MainFrame extends JFrame {
                     titleLabel.setText(LanguageUtil.getText("main.overview"));
                     titleLabel.setFont(FontLoader.getFont(16, Font.BOLD));
                 }
-                viewMenu.setText(
-                        LanguageUtil.getText("menu.view") + " (" + LanguageUtil.getText("main.overview") + ")");
-                if (overviewPanel != null) {
-                    try {
-                        overviewPanel.getClass().getMethod("onActivate").invoke(overviewPanel);
-                    } catch (Exception e) {
-                        // 忽略如果方法不存在
-                    }
+                viewMenu.setText(LanguageUtil.getText("menu.view"));
+                if (LanguageUtil.getCurrentLanguage().equals(LanguageUtil.ENGLISH)) {
+                    viewMenu.setText(viewMenu.getText().replace(".", " "));
                 }
                 break;
             case "account":
@@ -353,13 +479,9 @@ public class MainFrame extends JFrame {
                     titleLabel.setText(LanguageUtil.getText("main.account"));
                     titleLabel.setFont(FontLoader.getFont(16, Font.BOLD));
                 }
-                viewMenu.setText(LanguageUtil.getText("menu.view") + " (" + LanguageUtil.getText("main.account") + ")");
-                if (accountPanel != null) {
-                    try {
-                        accountPanel.getClass().getMethod("onActivate").invoke(accountPanel);
-                    } catch (Exception e) {
-                        // 忽略如果方法不存在
-                    }
+                viewMenu.setText(LanguageUtil.getText("menu.view"));
+                if (LanguageUtil.getCurrentLanguage().equals(LanguageUtil.ENGLISH)) {
+                    viewMenu.setText(viewMenu.getText().replace(".", " "));
                 }
                 break;
             case "aichat":
@@ -369,13 +491,9 @@ public class MainFrame extends JFrame {
                     titleLabel.setText(LanguageUtil.getText("main.ai_chat"));
                     titleLabel.setFont(FontLoader.getFont(16, Font.BOLD));
                 }
-                viewMenu.setText(LanguageUtil.getText("menu.view") + " (" + LanguageUtil.getText("main.ai_chat") + ")");
-                if (aiChatPanel != null) {
-                    try {
-                        aiChatPanel.getClass().getMethod("onActivate").invoke(aiChatPanel);
-                    } catch (Exception e) {
-                        // 忽略如果方法不存在
-                    }
+                viewMenu.setText(LanguageUtil.getText("menu.view"));
+                if (LanguageUtil.getCurrentLanguage().equals(LanguageUtil.ENGLISH)) {
+                    viewMenu.setText(viewMenu.getText().replace(".", " "));
                 }
                 break;
         }
@@ -394,11 +512,29 @@ public class MainFrame extends JFrame {
             titleLabel.setFont(FontLoader.getFont(14, Font.PLAIN));
         }
 
-        // 更新菜单文本
-        fileMenu.setText(LanguageUtil.getText("menu.file"));
-        viewMenu.setText(LanguageUtil.getText("menu.view"));
-        languageMenu.setText(LanguageUtil.getText("menu.language"));
-        helpMenu.setText(LanguageUtil.getText("menu.help"));
+        // 更新菜单文本，根据当前语言决定是否替换点号
+        boolean isEnglish = LanguageUtil.getCurrentLanguage().equals(LanguageUtil.ENGLISH);
+
+        if (isEnglish) {
+            // 英文模式：将点号替换为空格
+            fileMenu.setText(LanguageUtil.getText("menu.file").replace(".", " "));
+            viewMenu.setText(LanguageUtil.getText("menu.view").replace(".", " "));
+            languageMenu.setText(LanguageUtil.getText("menu.language").replace(".", " "));
+            helpMenu.setText(LanguageUtil.getText("menu.help").replace(".", " "));
+        } else {
+            // 中文模式：直接使用翻译
+            fileMenu.setText(LanguageUtil.getText("menu.file"));
+            viewMenu.setText(LanguageUtil.getText("menu.view"));
+            languageMenu.setText(LanguageUtil.getText("menu.language"));
+            helpMenu.setText(LanguageUtil.getText("menu.help"));
+        }
+
+        // 增加菜单项之间的距离
+        menuBar.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        fileMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        viewMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        languageMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        helpMenu.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
 
         // 更新菜单项文本
         importMenuItem.setText(LanguageUtil.getText("file.import"));
@@ -407,8 +543,8 @@ public class MainFrame extends JFrame {
         exitMenuItem.setText(LanguageUtil.getText("menu.exit"));
 
         // 更新语言菜单项
-        chineseMenuItem.setText(LanguageUtil.getText("main.chinese"));
-        englishMenuItem.setText(LanguageUtil.getText("main.english"));
+        chineseMenuItem.setText("中文");
+        englishMenuItem.setText("English");
 
         // 更新工具栏按钮文本
         dashboardButton.setText(LanguageUtil.getText("main.dashboard"));
@@ -590,11 +726,11 @@ public class MainFrame extends JFrame {
     private JPanel createTitleBarPanel() {
         JPanel titleBarPanel = new JPanel(new BorderLayout());
         titleBarPanel.setPreferredSize(new Dimension(getWidth(), 40));
-        titleBarPanel.setBackground(new Color(240, 240, 240));
+        titleBarPanel.setBackground(Color.WHITE);
 
         // 标题
         titleLabel = new JLabel(LanguageUtil.getText("main.title"), JLabel.CENTER);
-        titleLabel.setFont(FontLoader.getFont(14, Font.PLAIN));
+        titleLabel.setFont(FontLoader.getFont(14, Font.BOLD));
 
         // 窗口按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
@@ -677,8 +813,28 @@ public class MainFrame extends JFrame {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.setColor(color);
-                g.fillOval(0, 0, 12, 12);
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Outer highlight for depth effect
+                g2d.setColor(new Color(255, 255, 255, 60));
+                g2d.fillOval(-1, -1, 14, 14);
+
+                // Main button color
+                g2d.setColor(color);
+                g2d.fillOval(0, 0, 12, 12);
+
+                // Add slight inner shadow for 3D effect
+                if (color.equals(new Color(39, 201, 63))) { // Only for green button
+                    g2d.setColor(new Color(30, 170, 50));
+                    g2d.drawArc(1, 1, 10, 10, 45, 180);
+
+                    // Add subtle highlight at top-left
+                    g2d.setColor(new Color(100, 255, 120, 120));
+                    g2d.drawArc(2, 2, 8, 8, 225, 180);
+                }
+
+                g2d.dispose();
             }
         };
         button.setPreferredSize(new Dimension(15, 15));

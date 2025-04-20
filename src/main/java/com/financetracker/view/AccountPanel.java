@@ -1,12 +1,16 @@
+
 package com.financetracker.view;
 
 import com.financetracker.model.Account;
 import com.financetracker.model.User;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -21,6 +25,9 @@ public class AccountPanel extends JPanel {
     private JLabel balanceLabel;
     private JTable transactionsTable;
     private DefaultTableModel tableModel;
+    private Color accentColor = new Color(0, 122, 255); // Apple blue accent color
+    private Color backgroundColor = new Color(248, 248, 248); // Light gray background
+    private Color textColor = new Color(50, 50, 50); // Dark gray text
 
     public AccountPanel(User user) {
         this.currentUser = user;
@@ -28,18 +35,24 @@ public class AccountPanel extends JPanel {
     }
 
     private void setupUI() {
-        setLayout(new BorderLayout(10, 10));
+        setLayout(new BorderLayout(15, 15));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(backgroundColor);
 
         // 顶部账户选择面板
-        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel topPanel = new JPanel(new BorderLayout(15, 15));
+        topPanel.setBackground(backgroundColor);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
         // 账户选择下拉框
-        JPanel accountSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel accountSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        accountSelectionPanel.setBackground(backgroundColor);
         JLabel accountLabel = new JLabel("选择账户:");
+        accountLabel.setFont(new Font("SF Pro Display", Font.PLAIN, 14));
+        accountLabel.setForeground(textColor);
 
         // 创建假账户
-        Account bankAccount = new Account("中国银行储蓄卡", Account.AccountType.BANK);
+        Account bankAccount = new Account("中国银行储蓄卡 (银行账户)", Account.AccountType.BANK);
         Account alipayAccount = new Account("支付宝", Account.AccountType.ALIPAY);
         Account weChatAccount = new Account("微信支付", Account.AccountType.WECHAT_PAY);
 
@@ -47,15 +60,43 @@ public class AccountPanel extends JPanel {
         accountComboBox.addItem(bankAccount);
         accountComboBox.addItem(alipayAccount);
         accountComboBox.addItem(weChatAccount);
+        accountComboBox.setFont(new Font("SF Pro Display", Font.PLAIN, 14));
+        accountComboBox.setBackground(Color.WHITE);
+        accountComboBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
+                BorderFactory.createEmptyBorder(5, 8, 5, 8)));
+
+        // Make the dropdown look more modern
+        accountComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
+                    boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBorder(new EmptyBorder(6, 10, 6, 10));
+                if (isSelected) {
+                    setBackground(accentColor);
+                    setForeground(Color.WHITE);
+                } else {
+                    setBackground(Color.WHITE);
+                    setForeground(textColor);
+                }
+                return this;
+            }
+        });
 
         accountSelectionPanel.add(accountLabel);
         accountSelectionPanel.add(accountComboBox);
 
         // 账户余额面板
         JPanel balancePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        balancePanel.setBackground(backgroundColor);
         JLabel balanceTitleLabel = new JLabel("账户余额:");
+        balanceTitleLabel.setFont(new Font("SF Pro Display", Font.PLAIN, 14));
+        balanceTitleLabel.setForeground(textColor);
+
         balanceLabel = new JLabel("¥ 12,345.67");
-        balanceLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        balanceLabel.setFont(new Font("SF Pro Display", Font.BOLD, 18));
+        balanceLabel.setForeground(accentColor);
 
         balancePanel.add(balanceTitleLabel);
         balancePanel.add(balanceLabel);
@@ -65,8 +106,17 @@ public class AccountPanel extends JPanel {
 
         // 中心交易记录表格
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
-        centerPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "交易记录", TitledBorder.LEFT, TitledBorder.TOP));
+        centerPanel.setBackground(Color.WHITE);
+        centerPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220), 1, true),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)));
+
+        JLabel transactionHeaderLabel = new JLabel("交易记录");
+        transactionHeaderLabel.setFont(new Font("SF Pro Display", Font.BOLD, 16));
+        transactionHeaderLabel.setForeground(textColor);
+        transactionHeaderLabel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
+        centerPanel.add(transactionHeaderLabel, BorderLayout.NORTH);
 
         String[] columnNames = { "日期", "描述", "类别", "金额", "类型" };
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -81,27 +131,97 @@ public class AccountPanel extends JPanel {
 
         transactionsTable = new JTable(tableModel);
         transactionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        transactionsTable.setRowHeight(25);
+        transactionsTable.setRowHeight(40);
+        transactionsTable.setShowGrid(false);
+        transactionsTable.setFont(new Font("SF Pro Display", Font.PLAIN, 14));
+        transactionsTable.setBackground(Color.WHITE);
+        transactionsTable.setSelectionBackground(new Color(240, 245, 255));
+        transactionsTable.setSelectionForeground(textColor);
+        transactionsTable.setIntercellSpacing(new Dimension(0, 0));
+
+        // Style the table header
+        JTableHeader header = transactionsTable.getTableHeader();
+        header.setFont(new Font("SF Pro Display", Font.PLAIN, 14));
+        header.setBackground(new Color(245, 245, 247));
+        header.setForeground(new Color(100, 100, 100));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(220, 220, 220)));
+
+        // Apple-style row renderer with subtle separators
+        transactionsTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
+                        column);
+
+                // Set padding
+                label.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)),
+                        BorderFactory.createEmptyBorder(0, 12, 0, 12)));
+
+                // Style based on column type
+                if (column == 3) { // Amount column
+                    label.setHorizontalAlignment(SwingConstants.RIGHT);
+                    String text = value.toString();
+                    if (text.startsWith("+")) {
+                        label.setForeground(new Color(76, 217, 100)); // Green for income
+                    } else if (text.startsWith("-")) {
+                        label.setForeground(new Color(255, 59, 48)); // Red for expense
+                    }
+                } else {
+                    label.setHorizontalAlignment(SwingConstants.LEFT);
+                    label.setForeground(isSelected ? textColor : new Color(60, 60, 60));
+                }
+
+                if (isSelected) {
+                    label.setBackground(new Color(0, 122, 255, 20));
+                    label.setForeground(column == 3 ? label.getForeground() : textColor);
+                } else {
+                    label.setBackground(Color.WHITE);
+                }
+
+                return label;
+            }
+        });
 
         JScrollPane tableScrollPane = new JScrollPane(transactionsTable);
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        tableScrollPane.getViewport().setBackground(Color.WHITE);
+
+        // Customize the scrollbar for Apple look
+        JScrollBar verticalScrollBar = tableScrollPane.getVerticalScrollBar();
+        verticalScrollBar.setUnitIncrement(16);
+
+        // Simpler scrollbar customization to avoid errors
+        verticalScrollBar.putClientProperty("JScrollBar.showButtons", false);
+        verticalScrollBar.putClientProperty("Scrollbar.thumbArc", 8);
+        verticalScrollBar.putClientProperty("Scrollbar.minimumThumbSize", new Dimension(8, 40));
+        verticalScrollBar.setPreferredSize(new Dimension(8, 0));
+
         centerPanel.add(tableScrollPane, BorderLayout.CENTER);
 
         // 底部按钮面板
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel bottomPanel = new JPanel(new BorderLayout(15, 0));
+        bottomPanel.setBackground(backgroundColor);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
 
         // 添加新交易按钮面板
-        JPanel addTransactionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton addIncomeButton = new JButton("添加收入");
-        JButton addExpenseButton = new JButton("添加支出");
+        JPanel addTransactionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        addTransactionPanel.setBackground(backgroundColor);
+
+        JButton addIncomeButton = createStyledButton("添加收入", new Color(76, 217, 100)); // Green for income
+        JButton addExpenseButton = createStyledButton("添加支出", new Color(255, 59, 48)); // Red for expense
 
         addTransactionPanel.add(addIncomeButton);
         addTransactionPanel.add(addExpenseButton);
 
         // 管理账户按钮面板
-        JPanel manageAccountsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton addAccountButton = new JButton("添加账户");
-        JButton editAccountButton = new JButton("编辑账户");
-        JButton deleteAccountButton = new JButton("删除账户");
+        JPanel manageAccountsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        manageAccountsPanel.setBackground(backgroundColor);
+
+        JButton addAccountButton = createStyledButton("添加账户", accentColor);
+        JButton editAccountButton = createStyledButton("编辑账户", accentColor);
+        JButton deleteAccountButton = createStyledButton("删除账户", new Color(142, 142, 147)); // Gray for delete
 
         manageAccountsPanel.add(addAccountButton);
         manageAccountsPanel.add(editAccountButton);
@@ -122,6 +242,40 @@ public class AccountPanel extends JPanel {
         addAccountButton.addActionListener(e -> showAddAccountDialog());
         editAccountButton.addActionListener(e -> showEditAccountDialog());
         deleteAccountButton.addActionListener(e -> deleteAccount());
+    }
+
+    private JButton createStyledButton(String text, Color buttonColor) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (getModel().isPressed()) {
+                    g2.setColor(buttonColor.darker());
+                } else if (getModel().isRollover()) {
+                    g2.setColor(buttonColor.brighter());
+                } else {
+                    g2.setColor(buttonColor);
+                }
+
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.dispose();
+
+                super.paintComponent(g);
+            }
+        };
+
+        button.setFont(new Font("SF Pro Display", Font.PLAIN, 13));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+
+        return button;
     }
 
     private void addMockTransactions() {
@@ -488,3 +642,4 @@ public class AccountPanel extends JPanel {
         }
     }
 }
+
