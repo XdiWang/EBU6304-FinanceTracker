@@ -677,7 +677,7 @@ public class MainFrame extends JFrame {
             Map<String, Category> categoryCache = new HashMap<>(); // Category cache
 
             try (BufferedReader br = new BufferedReader(new FileReader(selectedFile, StandardCharsets.UTF_8))) { // Specified
-                                                                                                                 // UTF-8
+                // UTF-8
                 String line;
                 boolean isFirstLine = true; // To skip header
                 int lineNumber = 0;
@@ -707,7 +707,7 @@ public class MainFrame extends JFrame {
                         String typeStr = values[1].trim();
                         String descriptionStr = values[2].trim();
                         String amountStr = values[3].trim().replace("¥", "").trim(); // Remove currency symbols if
-                                                                                     // present
+                        // present
                         String categoryStr = values[4].trim();
 
                         LocalDate date = LocalDate.parse(dateStr, csvDateFormatter);
