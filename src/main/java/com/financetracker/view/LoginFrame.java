@@ -1,7 +1,9 @@
+
 package com.financetracker.view;
 
 import com.financetracker.controller.UserController;
 import com.financetracker.util.LanguageUtil;
+import com.financetracker.util.FontLoader;
 
 import javax.swing.*;
 import java.awt.*;
@@ -51,17 +53,17 @@ public class LoginFrame extends JFrame {
 
         // 用户名输入区域
         usernameLabel = new JLabel(LanguageUtil.getText("login.username"));
-        usernameLabel.setFont(com.financetracker.util.FontLoader.getFont(20, Font.BOLD));
+        usernameLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         usernameField = new JTextField(15);
-        usernameField.setFont(com.financetracker.util.FontLoader.getFont(18, Font.PLAIN));
+        usernameField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         usernameField.setPreferredSize(new Dimension(350, 40));
         usernameField.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
 
         // 密码输入区域
         passwordLabel = new JLabel(LanguageUtil.getText("login.password"));
-        passwordLabel.setFont(com.financetracker.util.FontLoader.getFont(20, Font.BOLD));
+        passwordLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         passwordField = new JPasswordField(15);
-        passwordField.setFont(com.financetracker.util.FontLoader.getFont(18, Font.PLAIN));
+        passwordField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         passwordField.setPreferredSize(new Dimension(350, 40));
         passwordField.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         passwordField.setEchoChar('\u25CF'); // Set the echo character to a bullet for better visibility
@@ -72,14 +74,14 @@ public class LoginFrame extends JFrame {
 
         // 设置按钮样式
         loginButton.setPreferredSize(new Dimension(150, 45));
-        loginButton.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        loginButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         loginButton.setBackground(Color.BLACK);
         loginButton.setForeground(Color.WHITE);
         loginButton.setFocusPainted(false);
         loginButton.setBorderPainted(false);
 
         registerButton.setPreferredSize(new Dimension(150, 45));
-        registerButton.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        registerButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         registerButton.setBackground(Color.BLACK);
         registerButton.setForeground(Color.WHITE);
         registerButton.setFocusPainted(false);
@@ -154,7 +156,7 @@ public class LoginFrame extends JFrame {
         JRadioButtonMenuItem englishMenuItem = new JRadioButtonMenuItem(LanguageUtil.getText("main.english"));
 
         // 设置菜单项字体以确保中文显示正常
-        Font menuFont = com.financetracker.util.FontLoader.getFont(14, Font.PLAIN);
+        Font menuFont = FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN);
         languageMenu.setFont(menuFont);
         chineseMenuItem.setFont(menuFont);
         englishMenuItem.setFont(menuFont);
@@ -177,14 +179,14 @@ public class LoginFrame extends JFrame {
             LanguageUtil.setCurrentLanguage(LanguageUtil.CHINESE);
             updateTexts();
             // 刷新字体以确保中文显示正常
-            com.financetracker.util.FontLoader.refreshAllUIComponentFonts();
+            FontLoader.refreshAllUIComponentFonts();
         });
 
         englishMenuItem.addActionListener(e -> {
             LanguageUtil.setCurrentLanguage(LanguageUtil.ENGLISH);
             updateTexts();
             // 刷新字体以确保UI显示正常
-            com.financetracker.util.FontLoader.refreshAllUIComponentFonts();
+            FontLoader.refreshAllUIComponentFonts();
         });
 
         // 添加语言菜单到标题栏
@@ -198,7 +200,7 @@ public class LoginFrame extends JFrame {
 
         // 标题
         titleLabel = new JLabel(LanguageUtil.getText("login.title"), JLabel.CENTER);
-        titleLabel.setFont(com.financetracker.util.FontLoader.getFont(14, Font.PLAIN));
+        titleLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
 
         // 窗口按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
@@ -291,15 +293,15 @@ public class LoginFrame extends JFrame {
 
         // 电子邮件/电话号码输入
         JLabel contactLabel = new JLabel(LanguageUtil.getText("2fa.contact"));
-        contactLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        contactLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
 
         JTextField contactField = new JTextField(20);
-        contactField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        contactField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         contactField.setPreferredSize(new Dimension(300, 40));
 
         // 获取验证码按钮
         JButton getCodeButton = new JButton(LanguageUtil.getText("2fa.get_code"));
-        getCodeButton.setFont(com.financetracker.util.FontLoader.getFont(14, Font.BOLD));
+        getCodeButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         getCodeButton.setBackground(Color.BLACK);
         getCodeButton.setForeground(Color.WHITE);
         getCodeButton.setFocusPainted(false);
@@ -307,15 +309,15 @@ public class LoginFrame extends JFrame {
 
         // 验证码输入
         JLabel codeLabel = new JLabel(LanguageUtil.getText("2fa.enter_code"));
-        codeLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        codeLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
 
         JTextField codeField = new JTextField(10);
-        codeField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        codeField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         codeField.setPreferredSize(new Dimension(300, 40));
 
         // 登录和重新发送按钮
         JButton loginButton = new JButton(LanguageUtil.getText("2fa.login"));
-        loginButton.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        loginButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         loginButton.setBackground(Color.BLACK);
         loginButton.setForeground(Color.WHITE);
         loginButton.setFocusPainted(false);
@@ -323,7 +325,7 @@ public class LoginFrame extends JFrame {
         loginButton.setPreferredSize(new Dimension(120, 45));
 
         JButton resendButton = new JButton(LanguageUtil.getText("2fa.resend"));
-        resendButton.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        resendButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         resendButton.setBackground(Color.BLACK);
         resendButton.setForeground(Color.WHITE);
         resendButton.setFocusPainted(false);
@@ -451,13 +453,17 @@ public class LoginFrame extends JFrame {
 
     private void openRegisterDialog() {
         JDialog registerDialog = new JDialog(this, LanguageUtil.getText("register.title"), true);
-        registerDialog.setSize(450, 550);
+        registerDialog.setSize(500, 600);
         registerDialog.setLocationRelativeTo(this);
         registerDialog.setResizable(false);
+
+        // 确保对话框使用正确的字体
+        registerDialog.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
 
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
         contentPanel.setBackground(Color.WHITE);
+        contentPanel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -466,57 +472,56 @@ public class LoginFrame extends JFrame {
 
         // 用户名字段
         JLabel usernameLabel = new JLabel(LanguageUtil.getText("register.username"));
-        usernameLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        usernameLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         JTextField usernameField = new JTextField(20);
         usernameField.setPreferredSize(new Dimension(400, 35));
-        usernameField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        usernameField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
 
         // 密码字段
         JLabel passwordLabel = new JLabel(LanguageUtil.getText("register.password"));
-        passwordLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        passwordLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         JPasswordField passwordField = new JPasswordField(20);
         passwordField.setPreferredSize(new Dimension(400, 35));
-        passwordField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        passwordField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         passwordField.setEchoChar('\u25CF'); // Use bullet character for password
 
         // 确认密码
         JLabel confirmPasswordLabel = new JLabel(LanguageUtil.getText("register.confirm"));
-        confirmPasswordLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        confirmPasswordLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
 
         JPasswordField confirmPasswordField = new JPasswordField(20);
-        confirmPasswordField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        confirmPasswordField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         confirmPasswordField.setPreferredSize(new Dimension(400, 35));
         confirmPasswordField.setEchoChar('\u25CF'); // Use bullet character for confirm password
 
         // 电子邮件
         JLabel emailLabel = new JLabel(LanguageUtil.getText("register.email"));
-        emailLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        emailLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
 
         JTextField emailField = new JTextField(20);
-        emailField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        emailField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         emailField.setPreferredSize(new Dimension(400, 35));
 
         // 添加手机号
-        JLabel phoneLabel = new JLabel(
-                LanguageUtil.getText("register.phone") != null ? LanguageUtil.getText("register.phone") : "手机号码:");
-        phoneLabel.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        JLabel phoneLabel = new JLabel(LanguageUtil.getText("register.phone"));
+        phoneLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
 
         JTextField phoneField = new JTextField(20);
-        phoneField.setFont(com.financetracker.util.FontLoader.getFont(16, Font.PLAIN));
+        phoneField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         phoneField.setPreferredSize(new Dimension(400, 35));
 
         // 注册和取消按钮
         JButton registerButton = new JButton(LanguageUtil.getText("register.register"));
-        registerButton.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        registerButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         registerButton.setBackground(Color.BLACK);
-        registerButton.setForeground(Color.WHITE);
+        registerButton.setForeground(Color.BLACK);
         registerButton.setFocusPainted(false);
         registerButton.setPreferredSize(new Dimension(180, 45));
 
         JButton cancelButton = new JButton(LanguageUtil.getText("register.cancel"));
-        cancelButton.setFont(com.financetracker.util.FontLoader.getFont(16, Font.BOLD));
+        cancelButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         cancelButton.setBackground(Color.BLACK);
-        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setForeground(Color.BLACK);
         cancelButton.setFocusPainted(false);
         cancelButton.setPreferredSize(new Dimension(180, 45));
 
@@ -556,9 +561,12 @@ public class LoginFrame extends JFrame {
         // 语言切换按钮，允许在对话框中切换语言
         JPanel languagePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         languagePanel.setBackground(new Color(240, 248, 255));
+        languagePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
+        languagePanel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
 
         JButton langChineseButton = new JButton("中文");
-        langChineseButton.setFont(com.financetracker.util.FontLoader.getFont(12, Font.PLAIN));
+        langChineseButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
+        langChineseButton.setPreferredSize(new Dimension(80, 30));
         langChineseButton.addActionListener(e -> {
             LanguageUtil.setCurrentLanguage(LanguageUtil.CHINESE);
             updateRegisterDialogTexts(registerDialog, usernameLabel, passwordLabel, confirmPasswordLabel,
@@ -568,7 +576,8 @@ public class LoginFrame extends JFrame {
         });
 
         JButton langEnglishButton = new JButton("English");
-        langEnglishButton.setFont(com.financetracker.util.FontLoader.getFont(12, Font.PLAIN));
+        langEnglishButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
+        langEnglishButton.setPreferredSize(new Dimension(110, 30));
         langEnglishButton.addActionListener(e -> {
             LanguageUtil.setCurrentLanguage(LanguageUtil.ENGLISH);
             updateRegisterDialogTexts(registerDialog, usernameLabel, passwordLabel, confirmPasswordLabel,
@@ -585,6 +594,7 @@ public class LoginFrame extends JFrame {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 20, 0)); // 上下各加30px
         buttonPanel.setBackground(new Color(240, 248, 255));
         buttonPanel.add(registerButton);
         buttonPanel.add(cancelButton);
@@ -594,6 +604,9 @@ public class LoginFrame extends JFrame {
         contentPanel.add(buttonPanel, gbc);
 
         registerDialog.add(contentPanel, BorderLayout.CENTER);
+
+        // 应用字体到整个对话框组件树
+        FontLoader.applyFontToComponentTree(registerDialog, FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN);
 
         // 添加按钮事件
         cancelButton.addActionListener(e -> registerDialog.dispose());
@@ -630,9 +643,7 @@ public class LoginFrame extends JFrame {
             String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
             if (!email.matches(emailRegex)) {
                 JOptionPane.showMessageDialog(registerDialog,
-                        LanguageUtil.getText("register.error.email") != null
-                                ? LanguageUtil.getText("register.error.email")
-                                : "邮箱格式无效",
+                        LanguageUtil.getText("register.error.email"),
                         LanguageUtil.getText("register.error"),
                         JOptionPane.ERROR_MESSAGE);
                 return;
@@ -642,9 +653,7 @@ public class LoginFrame extends JFrame {
             String phoneRegex = "^1[3-9]\\d{9}$";
             if (!phone.matches(phoneRegex)) {
                 JOptionPane.showMessageDialog(registerDialog,
-                        LanguageUtil.getText("register.error.phone") != null
-                                ? LanguageUtil.getText("register.error.phone")
-                                : "手机号格式无效",
+                        LanguageUtil.getText("register.error.phone"),
                         LanguageUtil.getText("register.error"),
                         JOptionPane.ERROR_MESSAGE);
                 return;
@@ -674,16 +683,15 @@ public class LoginFrame extends JFrame {
      * 更新注册对话框的文本标签
      */
     private void updateRegisterDialogTexts(JDialog dialog, JLabel usernameLabel, JLabel passwordLabel,
-                                           JLabel confirmPasswordLabel, JLabel emailLabel, JLabel phoneLabel,
-                                           JButton registerButton, JButton cancelButton) {
+            JLabel confirmPasswordLabel, JLabel emailLabel, JLabel phoneLabel,
+            JButton registerButton, JButton cancelButton) {
 
         // 更新标签文本
         usernameLabel.setText(LanguageUtil.getText("register.username"));
         passwordLabel.setText(LanguageUtil.getText("register.password"));
         confirmPasswordLabel.setText(LanguageUtil.getText("register.confirm"));
         emailLabel.setText(LanguageUtil.getText("register.email"));
-        phoneLabel.setText(
-                LanguageUtil.getText("register.phone") != null ? LanguageUtil.getText("register.phone") : "手机号码:");
+        phoneLabel.setText(LanguageUtil.getText("register.phone"));
 
         // 更新按钮文本
         registerButton.setText(LanguageUtil.getText("register.register"));
@@ -713,3 +721,4 @@ public class LoginFrame extends JFrame {
         SwingUtilities.updateComponentTreeUI(this);
     }
 }
+
