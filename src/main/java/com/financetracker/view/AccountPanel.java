@@ -1,8 +1,9 @@
-
 package com.financetracker.view;
 
 import com.financetracker.model.Account;
 import com.financetracker.model.User;
+import com.financetracker.model.Transaction;
+import com.financetracker.service.TransactionService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -11,16 +12,20 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * 账户管理面板 - 允许用户管理多个账户和添加交易
  */
-public class AccountPanel extends JPanel {
+public class AccountPanel extends JPanel implements PropertyChangeListener {
 
     @SuppressWarnings("unused")
     private User currentUser;
+    private TransactionService transactionService;
     private JComboBox<Account> accountComboBox;
     private JLabel balanceLabel;
     private JTable transactionsTable;
@@ -29,9 +34,12 @@ public class AccountPanel extends JPanel {
     private Color backgroundColor = new Color(248, 248, 248); // Light gray background
     private Color textColor = new Color(50, 50, 50); // Dark gray text
 
-    public AccountPanel(User user) {
+    public AccountPanel(User user, TransactionService transactionService) {
         this.currentUser = user;
+        this.transactionService = transactionService;
+        this.transactionService.addPropertyChangeListener(this);
         setupUI();
+        refreshTransactionTable();
     }
 
     private void setupUI() {
@@ -70,7 +78,7 @@ public class AccountPanel extends JPanel {
         accountComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
-                    boolean cellHasFocus) {
+                                                          boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 setBorder(new EmptyBorder(6, 10, 6, 10));
                 if (isSelected) {
@@ -94,7 +102,7 @@ public class AccountPanel extends JPanel {
         balanceTitleLabel.setFont(new Font("SF Pro Display", Font.PLAIN, 14));
         balanceTitleLabel.setForeground(textColor);
 
-        balanceLabel = new JLabel("¥ 12,345.67");
+        balanceLabel = new JLabel("￥12,345.67");
         balanceLabel.setFont(new Font("SF Pro Display", Font.BOLD, 18));
         balanceLabel.setForeground(accentColor);
 
@@ -126,9 +134,6 @@ public class AccountPanel extends JPanel {
             }
         };
 
-        // 添加一些模拟交易数据
-        addMockTransactions();
-
         transactionsTable = new JTable(tableModel);
         transactionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         transactionsTable.setRowHeight(40);
@@ -150,7 +155,7 @@ public class AccountPanel extends JPanel {
         transactionsTable.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                    boolean hasFocus, int row, int column) {
+                                                           boolean hasFocus, int row, int column) {
                 JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
                         column);
 
@@ -278,23 +283,28 @@ public class AccountPanel extends JPanel {
         return button;
     }
 
-    private void addMockTransactions() {
-        // 添加一些模拟交易数据
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private void refreshTransactionTable() {
+        if (tableModel == null || transactionService == null) {
+            return;
+        }
+        tableModel.setRowCount(0);
+        List<Transaction> transactions = transactionService.getTransactions();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        Object[][] data = {
-                { LocalDate.now().format(formatter), "工资", "收入", "+¥ 10,000.00", "收入" },
-                { LocalDate.now().minusDays(1).format(formatter), "超市购物", "食品", "-¥ 320.50", "支出" },
-                { LocalDate.now().minusDays(2).format(formatter), "电费", "水电煤", "-¥ 150.00", "支出" },
-                { LocalDate.now().minusDays(3).format(formatter), "餐厅", "餐饮", "-¥ 89.00", "支出" },
-                { LocalDate.now().minusDays(4).format(formatter), "网购", "购物", "-¥ 299.00", "支出" },
-                { LocalDate.now().minusDays(5).format(formatter), "电影票", "娱乐", "-¥ 80.00", "支出" },
-                { LocalDate.now().minusDays(6).format(formatter), "兼职收入", "收入", "+¥ 500.00", "收入" },
-                { LocalDate.now().minusDays(7).format(formatter), "公交卡充值", "交通", "-¥ 100.00", "支出" }
-        };
+        for (Transaction tx : transactions) {
+            String typeStr = tx.getType() == Transaction.TransactionType.INCOME ? "收入" : "支出";
+            String amountStr = String.format("%s￥%.2f", tx.getType() == Transaction.TransactionType.INCOME ? "+" : "-",
+                    Math.abs(tx.getAmount()));
 
-        for (Object[] row : data) {
-            tableModel.addRow(row);
+            String categoryName = tx.getCategory() != null ? tx.getCategory().getName() : "未分类";
+
+            tableModel.addRow(new Object[] {
+                    tx.getDate().format(dateFormatter),
+                    tx.getDescription(),
+                    categoryName,
+                    amountStr,
+                    typeStr
+            });
         }
     }
 
@@ -306,141 +316,117 @@ public class AccountPanel extends JPanel {
 
             // 模拟不同账户的余额
             if (accountType.equals("银行账户")) {
-                balanceLabel.setText("¥ 12,345.67");
+                balanceLabel.setText("￥12,345.67");
             } else if (accountType.equals("支付宝")) {
-                balanceLabel.setText("¥ 5,678.90");
+                balanceLabel.setText("￥5,678.90");
             } else if (accountType.equals("微信支付")) {
-                balanceLabel.setText("¥ 1,234.56");
+                balanceLabel.setText("￥1,234.56");
             }
 
             // 清空并重新填充交易表格
             tableModel.setRowCount(0);
-            addMockTransactions();
+            refreshTransactionTable();
         }
     }
 
     private void showAddTransactionDialog(boolean isIncome) {
-        JDialog addTransactionDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-                isIncome ? "添加收入" : "添加支出", true);
-        addTransactionDialog.setSize(400, 300);
-        addTransactionDialog.setLocationRelativeTo(this);
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), isIncome ? "添加收入" : "添加支出", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setSize(450, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(new Color(245, 245, 247));
 
-        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        formPanel.setBackground(Color.WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 8, 8, 8);
 
+        gbc.gridx = 0;
+        gbc.gridy = 0;
         JLabel dateLabel = new JLabel("日期:");
-        JTextField dateField = new JTextField(10);
-        dateField.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        formPanel.add(dateLabel, gbc);
+        gbc.gridx = 1;
+        JTextField dateField = new JTextField(LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+        dateField.setToolTipText("YYYY-MM-DD");
+        formPanel.add(dateField, gbc);
 
-        JLabel amountLabel = new JLabel("金额:");
-        JTextField amountField = new JTextField(10);
-
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         JLabel descriptionLabel = new JLabel("描述:");
+        formPanel.add(descriptionLabel, gbc);
+        gbc.gridx = 1;
         JTextField descriptionField = new JTextField(20);
+        formPanel.add(descriptionField, gbc);
 
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         JLabel categoryLabel = new JLabel("类别:");
-        JComboBox<String> categoryComboBox = new JComboBox<>();
+        formPanel.add(categoryLabel, gbc);
+        gbc.gridx = 1;
+        JTextField categoryField = new JTextField("餐饮");
+        formPanel.add(categoryField, gbc);
 
-        // 根据是收入还是支出，添加不同的类别选项
-        if (isIncome) {
-            categoryComboBox.addItem("工资");
-            categoryComboBox.addItem("投资收入");
-            categoryComboBox.addItem("礼金");
-            categoryComboBox.addItem("退款");
-            categoryComboBox.addItem("其他收入");
-        } else {
-            categoryComboBox.addItem("食品");
-            categoryComboBox.addItem("交通");
-            categoryComboBox.addItem("购物");
-            categoryComboBox.addItem("娱乐");
-            categoryComboBox.addItem("水电煤");
-            categoryComboBox.addItem("房租");
-            categoryComboBox.addItem("教育");
-            categoryComboBox.addItem("医疗健康");
-        }
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        JLabel amountLabel = new JLabel("金额 (￥):");
+        formPanel.add(amountLabel, gbc);
+        gbc.gridx = 1;
+        JTextField amountField = new JTextField(10);
+        formPanel.add(amountField, gbc);
 
-        panel.add(dateLabel);
-        panel.add(dateField);
-        panel.add(amountLabel);
-        panel.add(amountField);
-        panel.add(descriptionLabel);
-        panel.add(descriptionField);
-        panel.add(categoryLabel);
-        panel.add(categoryComboBox);
-
-        JButton cancelButton = new JButton("取消");
-        JButton confirmButton = new JButton("确认");
+        dialog.add(formPanel, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 10, 20));
+        buttonPanel.setBackground(new Color(245, 245, 247));
+        JButton saveButton = new JButton("保存");
+        JButton cancelButton = new JButton("取消");
+        buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
-        buttonPanel.add(confirmButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
 
-        panel.add(new JLabel("")); // 占位
-        panel.add(buttonPanel);
-
-        addTransactionDialog.add(panel);
-
-        // 添加按钮监听器
-        cancelButton.addActionListener(e -> addTransactionDialog.dispose());
-
-        confirmButton.addActionListener(e -> {
+        saveButton.addActionListener(e -> {
             try {
-                String dateStr = dateField.getText();
-                String amountStr = amountField.getText();
+                LocalDate date = LocalDate.parse(dateField.getText(), DateTimeFormatter.ISO_DATE);
                 String description = descriptionField.getText();
-                String category = (String) categoryComboBox.getSelectedItem();
+                String categoryName = categoryField.getText();
+                double amount = Double.parseDouble(amountField.getText());
 
-                // 基本验证
-                if (dateStr.isEmpty() || amountStr.isEmpty() || description.isEmpty()) {
-                    JOptionPane.showMessageDialog(addTransactionDialog,
-                            "所有字段都必须填写",
-                            "错误",
-                            JOptionPane.ERROR_MESSAGE);
+                if (description.isEmpty() || amount <= 0) {
+                    JOptionPane.showMessageDialog(dialog, "描述和金额不能为空，金额必须大于0。", "输入错误", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                // 尝试解析金额
-                double amount;
-                try {
-                    amount = Double.parseDouble(amountStr);
-                    if (amount <= 0) {
-                        JOptionPane.showMessageDialog(addTransactionDialog,
-                                "金额必须大于零",
-                                "错误",
-                                JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(addTransactionDialog,
-                            "无效的金额格式，请输入数字",
-                            "错误",
-                            JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
+                com.financetracker.model.Category category = new com.financetracker.model.Category(categoryName);
 
-                // 在实际应用中，这里应该添加交易到数据库或内存中的数据结构
-                // 现在只是显示一个成功消息
-                JOptionPane.showMessageDialog(addTransactionDialog,
-                        "交易已成功添加",
-                        "成功",
-                        JOptionPane.INFORMATION_MESSAGE);
+                String transactionId = "TX" + System.currentTimeMillis();
 
-                addTransactionDialog.dispose();
+                Transaction newTransaction = new Transaction(
+                        transactionId,
+                        date,
+                        isIncome ? amount : -amount,
+                        description,
+                        category,
+                        isIncome ? Transaction.TransactionType.INCOME : Transaction.TransactionType.EXPENSE,
+                        (Account) accountComboBox.getSelectedItem());
 
-                // 更新交易列表（简单地添加到表格）
-                String formattedAmount = String.format("%s¥ %.2f", isIncome ? "+" : "-", amount);
-                String type = isIncome ? "收入" : "支出";
+                transactionService.addTransaction(newTransaction);
 
-                tableModel.insertRow(0, new Object[] { dateStr, description, category, formattedAmount, type });
+                dialog.dispose();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "金额必须是有效的数字。", "输入错误", JOptionPane.ERROR_MESSAGE);
+            } catch (java.time.format.DateTimeParseException ex) {
+                JOptionPane.showMessageDialog(dialog, "日期格式无效。请使用 YYYY-MM-DD。", "输入错误", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(addTransactionDialog,
-                        "添加交易时出错: " + ex.getMessage(),
-                        "错误",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "保存交易时出错: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         });
 
-        addTransactionDialog.setVisible(true);
+        cancelButton.addActionListener(e -> dialog.dispose());
+        dialog.setVisible(true);
     }
 
     private void showAddAccountDialog() {
@@ -473,12 +459,11 @@ public class AccountPanel extends JPanel {
         panel.add(nameField);
         panel.add(typeLabel);
         panel.add(typeComboBox);
-        panel.add(new JLabel("")); // 占位
+        panel.add(new JLabel(""));
         panel.add(buttonPanel);
 
         addAccountDialog.add(panel);
 
-        // 添加按钮监听器
         cancelButton.addActionListener(e -> addAccountDialog.dispose());
 
         addButton.addActionListener(e -> {
@@ -493,7 +478,6 @@ public class AccountPanel extends JPanel {
                 return;
             }
 
-            // 在实际应用中，这里应创建并添加新账户
             JOptionPane.showMessageDialog(addAccountDialog,
                     "添加了新账户: " + accountName + " (" + accountType + ")",
                     "成功",
@@ -501,8 +485,7 @@ public class AccountPanel extends JPanel {
 
             addAccountDialog.dispose();
 
-            // 模拟添加账户到下拉框
-            Account.AccountType type = Account.AccountType.BANK; // 默认
+            Account.AccountType type = Account.AccountType.BANK;
             if (accountType.equals("支付宝")) {
                 type = Account.AccountType.ALIPAY;
             } else if (accountType.equals("微信支付")) {
@@ -549,7 +532,6 @@ public class AccountPanel extends JPanel {
         typeComboBox.addItem("现金");
         typeComboBox.addItem("其他");
 
-        // 设置当前账户类型
         typeComboBox.setSelectedItem(selectedAccount.getType().getDisplayName());
 
         JButton cancelButton = new JButton("取消");
@@ -563,12 +545,11 @@ public class AccountPanel extends JPanel {
         panel.add(nameField);
         panel.add(typeLabel);
         panel.add(typeComboBox);
-        panel.add(new JLabel("")); // 占位
+        panel.add(new JLabel(""));
         panel.add(buttonPanel);
 
         editAccountDialog.add(panel);
 
-        // 添加按钮监听器
         cancelButton.addActionListener(e -> editAccountDialog.dispose());
 
         saveButton.addActionListener(e -> {
@@ -583,7 +564,6 @@ public class AccountPanel extends JPanel {
                 return;
             }
 
-            // 在实际应用中，这里应更新账户信息
             JOptionPane.showMessageDialog(editAccountDialog,
                     "账户已更新: " + accountName + " (" + accountType + ")",
                     "成功",
@@ -591,8 +571,7 @@ public class AccountPanel extends JPanel {
 
             editAccountDialog.dispose();
 
-            // 模拟更新账户
-            Account.AccountType type = Account.AccountType.BANK; // 默认
+            Account.AccountType type = Account.AccountType.BANK;
             if (accountType.equals("支付宝")) {
                 type = Account.AccountType.ALIPAY;
             } else if (accountType.equals("微信支付")) {
@@ -606,7 +585,6 @@ public class AccountPanel extends JPanel {
             selectedAccount.setName(accountName);
             selectedAccount.setType(type);
 
-            // 刷新下拉框
             accountComboBox.repaint();
         });
 
@@ -624,22 +602,33 @@ public class AccountPanel extends JPanel {
         }
 
         int confirm = JOptionPane.showConfirmDialog(this,
-                "确定要删除账户 \"" + selectedAccount + "\" 吗？\n该操作不可撤销。",
+                "确定要删除账户 '" + selectedAccount.getName() + "' 吗？\n此操作也会删除与此账户关联的所有交易。",
                 "确认删除",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            // 在实际应用中，这里应删除账户数据
-
-            // 从下拉框中移除该账户
+            // TODO: Implement account deletion logic with AccountService
+            // transactionService.deleteAccount(selectedAccount); // This was incorrect
+            // For now, just remove from ComboBox
             accountComboBox.removeItem(selectedAccount);
 
             JOptionPane.showMessageDialog(this,
-                    "账户已成功删除",
+                    "账户已成功删除 (模拟)", // Indicate it's a simulation for now
                     "成功",
                     JOptionPane.INFORMATION_MESSAGE);
+
+            // Refresh or update UI as needed, e.g., if transactions for this account were
+            // shown
+            // refreshTransactionTable(); // Might be needed if transactions are filtered by
+            // account
+        }
+    }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if ("transactions".equals(evt.getPropertyName())) {
+            SwingUtilities.invokeLater(this::refreshTransactionTable);
         }
     }
 }
-

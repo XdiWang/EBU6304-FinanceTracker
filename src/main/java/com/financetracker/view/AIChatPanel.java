@@ -3,6 +3,7 @@ package com.financetracker.view;
 import com.financetracker.model.*;
 import com.financetracker.service.AIService;
 import com.financetracker.service.DeepSeekAPIService;
+import com.financetracker.service.TransactionService;
 import com.financetracker.util.FontLoader;
 import com.financetracker.util.LanguageUtil;
 import com.financetracker.util.LanguageUtil.Language;
@@ -25,6 +26,11 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.stream.Collectors;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.BasicStroke;
+import java.awt.event.ItemEvent;
 
 /**
  * AI聊天面板 - 允许用户与AI助手聊天获取财务建议
@@ -34,6 +40,7 @@ public class AIChatPanel extends JPanel {
     private User currentUser;
     private AIService aiService;
     private DeepSeekAPIService deepSeekService;
+    private TransactionService transactionService;
     private JPanel chatPanel;
     private JScrollPane scrollPane;
     private JTextField inputField;
@@ -60,10 +67,11 @@ public class AIChatPanel extends JPanel {
     private JTextArea currentAIMessageArea;
     private String currentStreamedMessage = "";
 
-    public AIChatPanel(User user) {
+    public AIChatPanel(User user, TransactionService transactionService) {
         this.currentUser = user;
         this.aiService = new AIService();
         this.deepSeekService = new DeepSeekAPIService();
+        this.transactionService = transactionService;
         this.executorService = Executors.newCachedThreadPool();
 
         setLayout(new BorderLayout());
@@ -94,18 +102,32 @@ public class AIChatPanel extends JPanel {
             InputStream userStream = getClass().getResourceAsStream("/resources/images/user.png");
             if (userStream != null) {
                 userAvatarImage = ImageIO.read(userStream);
+                System.out.println("用户头像加载成功");
+            } else {
+                System.out.println("无法找到用户头像图片资源");
             }
 
             // 加载AI头像
             InputStream aiStream = getClass().getResourceAsStream("/resources/images/chat.png");
             if (aiStream != null) {
                 aiAvatarImage = ImageIO.read(aiStream);
+                System.out.println("AI头像加载成功");
+            } else {
+                System.out.println("无法找到AI头像图片资源");
+                // 尝试替代路径
+                aiStream = getClass().getResourceAsStream("/images/chat.png");
+                if (aiStream != null) {
+                    aiAvatarImage = ImageIO.read(aiStream);
+                    System.out.println("通过替代路径加载AI头像成功");
+                }
             }
 
             // 加载发送按钮图片
             InputStream sendStream = getClass().getResourceAsStream("/resources/images/send.png");
             if (sendStream != null) {
                 sendButtonImage = ImageIO.read(sendStream);
+            } else {
+                System.out.println("无法找到发送按钮图片资源");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -131,14 +153,59 @@ public class AIChatPanel extends JPanel {
 
         // 为聊天区域添加滚动功能
         scrollPane = new JScrollPane(chatPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        // 增强聊天区域与输入区域的分隔
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 230, 230)), // 底部添加细线
+                BorderFactory.createEmptyBorder(0, 0, 5, 0) // 底部内边距
+        ));
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        // 禁用水平滚动条
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         // 底部输入面板
         JPanel inputPanel = new JPanel(new BorderLayout(10, 0));
         inputPanel.setBackground(Color.WHITE);
         inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+
+        // 使用GridBagLayout创建输入控件面板
+        JPanel controlsPanel = new JPanel(new GridBagLayout());
+        controlsPanel.setBackground(Color.WHITE);
+        controlsPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        // DeepSeek AI 选项设置
+        useDeepSeekCheckBox = new JCheckBox("使用DeepSeek AI");
+        useDeepSeekCheckBox.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_BOLD));
+        useDeepSeekCheckBox.setSelected(true);
+        useDeepSeekCheckBox.setForeground(new Color(30, 30, 30));
+        useDeepSeekCheckBox.setBackground(Color.WHITE);
+        useDeepSeekCheckBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+
+        // 添加选中状态变化监听器，提供更明显的视觉反馈
+        useDeepSeekCheckBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                useDeepSeekCheckBox.setBackground(new Color(240, 248, 255)); // 轻微蓝色背景表示激活
+                useDeepSeekCheckBox.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(100, 181, 246), 1),
+                        BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+            } else {
+                useDeepSeekCheckBox.setBackground(Color.WHITE);
+                useDeepSeekCheckBox.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+                        BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+            }
+        });
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.2;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+        controlsPanel.add(useDeepSeekCheckBox, gbc);
 
         // 自定义圆角输入框
         JPanel inputFieldPanel = new JPanel(new BorderLayout()) {
@@ -164,58 +231,12 @@ public class AIChatPanel extends JPanel {
         inputField.setOpaque(false);
 
         inputFieldPanel.add(inputField, BorderLayout.CENTER);
-        inputFieldPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
-        // 底部工具面板，包含输入框和按钮
-        JPanel bottomPanel = new JPanel(new BorderLayout(10, 0));
-        bottomPanel.setBackground(Color.WHITE);
-
-        // 添加表情和上传按钮
-        JPanel toolButtonsPanel = new JPanel(new BorderLayout());
-        toolButtonsPanel.setBackground(Color.WHITE);
-        toolButtonsPanel.setPreferredSize(new Dimension(250, 40)); // 确保面板有足够空间
-
-        // 创建DeepSeek选择框的专用面板
-        JPanel deepSeekPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        deepSeekPanel.setBackground(Color.WHITE);
-        deepSeekPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
-        deepSeekPanel.setPreferredSize(new Dimension(150, 30));
-
-        // 添加DeepSeek API切换选项 - 使用标准JCheckBox
-        useDeepSeekCheckBox = new JCheckBox("使用DeepSeek AI");
-        useDeepSeekCheckBox.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_BOLD));
-        useDeepSeekCheckBox.setSelected(true);
-        useDeepSeekCheckBox.setForeground(new Color(30, 30, 30));
-        useDeepSeekCheckBox.setBackground(Color.WHITE);
-        // 增加边框和边距使其更加明显
-        useDeepSeekCheckBox.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
-        deepSeekPanel.add(useDeepSeekCheckBox);
-
-        // 添加DeepSeek面板到工具按钮面板
-        toolButtonsPanel.add(deepSeekPanel, BorderLayout.WEST);
-
-        // 表情符号和附件按钮放在东侧
-        JPanel extraButtonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        extraButtonsPanel.setBackground(Color.WHITE);
-
-        JButton emojiButton = new JButton("😊");
-        emojiButton.setBorderPainted(false);
-        emojiButton.setContentAreaFilled(false);
-        emojiButton.setFocusPainted(false);
-        emojiButton.setFont(new Font("Arial", Font.PLAIN, 20));
-
-        JButton uploadButton = new JButton("📎");
-        uploadButton.setBorderPainted(false);
-        uploadButton.setContentAreaFilled(false);
-        uploadButton.setFocusPainted(false);
-        uploadButton.setFont(new Font("Arial", Font.PLAIN, 20));
-
-        extraButtonsPanel.add(emojiButton);
-        extraButtonsPanel.add(uploadButton);
-
-        toolButtonsPanel.add(extraButtonsPanel, BorderLayout.EAST);
+        // 添加输入框到GridBag布局
+        gbc.gridx = 1;
+        gbc.weightx = 0.7;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        controlsPanel.add(inputFieldPanel, gbc);
 
         // 发送按钮面板 - 圆角背景
         JPanel sendButtonPanel = new JPanel(new BorderLayout()) {
@@ -256,15 +277,20 @@ public class AIChatPanel extends JPanel {
 
         sendButtonPanel.add(sendButton, BorderLayout.CENTER);
 
-        // 组装底部面板
-        bottomPanel.add(toolButtonsPanel, BorderLayout.WEST);
-        bottomPanel.add(inputFieldPanel, BorderLayout.CENTER);
-        bottomPanel.add(sendButtonPanel, BorderLayout.EAST);
+        // 添加发送按钮到GridBag布局
+        gbc.gridx = 2;
+        gbc.weightx = 0.1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        controlsPanel.add(sendButtonPanel, gbc);
 
-        // 快速选项按钮面板
+        // 快速选项按钮面板 - 改进样式
         quickOptionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        quickOptionsPanel.setBackground(Color.WHITE);
-        quickOptionsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        quickOptionsPanel.setBackground(new Color(248, 249, 250)); // 浅色背景增强区分度
+        quickOptionsPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(230, 230, 230)), // 顶部细线
+                BorderFactory.createEmptyBorder(15, 20, 15, 20) // 内边距
+        ));
 
         JButton suggestionsButton = createQuickOptionButton("建议");
         JButton holidayButton = createQuickOptionButton("假期规划");
@@ -274,8 +300,8 @@ public class AIChatPanel extends JPanel {
         quickOptionsPanel.add(holidayButton);
         quickOptionsPanel.add(forecastButton);
 
-        // 将输入组件和快速选项添加到输入面板
-        inputPanel.add(bottomPanel, BorderLayout.CENTER);
+        // 将输入组件添加到输入面板
+        inputPanel.add(controlsPanel, BorderLayout.CENTER);
         inputPanel.add(quickOptionsPanel, BorderLayout.SOUTH);
 
         // 添加组件到内容面板
@@ -323,14 +349,16 @@ public class AIChatPanel extends JPanel {
     private JPanel createTitleBarPanel() {
         JPanel titleBarPanel = new JPanel(new BorderLayout());
         titleBarPanel.setPreferredSize(new Dimension(getWidth(), 40));
-        titleBarPanel.setBackground(Color.WHITE); // 从灰色改为白色
+        titleBarPanel.setBackground(Color.WHITE);
 
-        // 标题 - 加粗显示
-        JLabel titleLabel = new JLabel(LanguageUtil.getText("main.title"), JLabel.CENTER);
-        titleLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD)); // 设置为粗体
+        // 标题 - 改为居中并加粗
+        JLabel titleLabel = new JLabel("AI-Empowered Personal Finance Tracker", JLabel.CENTER); // 确保居中
+        titleLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         titleLabel.setForeground(Color.BLACK);
+        // titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0)); //
+        // 如果居中，则不需要特定边距
 
-        titleBarPanel.add(titleLabel, BorderLayout.CENTER);
+        titleBarPanel.add(titleLabel, BorderLayout.CENTER); // 使用CENTER实现居中
 
         return titleBarPanel;
     }
@@ -342,25 +370,47 @@ public class AIChatPanel extends JPanel {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(245, 245, 245));
+
+                // 更鲜明的背景色
+                g2d.setColor(new Color(240, 242, 245));
 
                 // 绘制圆角矩形
-                int arc = 20; // 圆角大小
+                int arc = 20;
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
+
+                // 添加细微边框增强层次感
+                g2d.setColor(new Color(220, 225, 235));
+                g2d.setStroke(new BasicStroke(1.0f));
+                g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, arc, arc);
+
                 g2d.dispose();
                 super.paintComponent(g);
             }
         };
 
+        // 改进按钮样式
         button.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_PLAIN));
-        button.setForeground(Color.BLACK);
+        button.setForeground(new Color(60, 64, 67)); // 更深的文字颜色提高可读性
         button.setOpaque(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
 
-        // 去掉表情符号前缀，直接使用简单文本
+        // 添加鼠标悬停效果
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setForeground(new Color(25, 103, 210)); // 悬停时文字变蓝
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setForeground(new Color(60, 64, 67)); // 恢复原色
+            }
+        });
+
+        // 设置按钮文本
         String plainText = text;
         if (text.contains("suggestion") || text.contains("建议")) {
             plainText = LanguageUtil.CHINESE.equals(LanguageUtil.getCurrentLanguage()) ? "建议" : "Suggestions";
@@ -375,402 +425,377 @@ public class AIChatPanel extends JPanel {
     }
 
     private void addInitialMessages() {
-        String welcomeMessage;
-        if (LanguageUtil.CHINESE.equals(LanguageUtil.getCurrentLanguage())) {
-            welcomeMessage = "欢迎使用AI助手！你可以向我询问有关财务管理、预算规划、投资建议等问题。";
-        } else {
-            welcomeMessage = "Welcome to AI Assistant! You can ask me questions about financial management, budget planning, investment advice, etc.";
+        // 不添加初始消息，让对话从用户开始
+        // String welcomeMessage;
+        // if (LanguageUtil.CHINESE.equals(LanguageUtil.getCurrentLanguage())) {
+        // welcomeMessage = "欢迎使用AI助手！你可以向我询问有关财务管理、预算规划、投资建议等问题。";
+        // } else {
+        // welcomeMessage = "Welcome to AI Assistant! You can ask me questions about
+        // financial management, budget planning, investment advice, etc.";
+        // }
+        // appendMessage("AI助手", welcomeMessage, false);
+    }
+
+    private String summarizeTransactionsForAI() {
+        if (transactionService == null) {
+            return ""; // Or some default message indicating no transaction data
         }
-        appendMessage("AI助手", welcomeMessage, false);
+        List<Transaction> transactions = transactionService.getTransactions();
+        if (transactions.isEmpty()) {
+            return LanguageUtil.getText("aiChat.noTransactions");
+        }
+
+        // Basic summary: total income, total expenses, and last few transactions
+        double totalIncome = transactions.stream()
+                .filter(t -> t.getType() == Transaction.TransactionType.INCOME)
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+        double totalExpenses = transactions.stream()
+                .filter(t -> t.getType() == Transaction.TransactionType.EXPENSE)
+                .mapToDouble(t -> Math.abs(t.getAmount())) // Expenses are negative
+                .sum();
+
+        String summary = String.format(LanguageUtil.getText("aiChat.transactionSummaryFormat"),
+                totalIncome, totalExpenses, transactions.size());
+
+        // Add last 3-5 transactions as examples
+        int limit = Math.min(transactions.size(), 3);
+        if (limit > 0) {
+            summary += "\n" + LanguageUtil.getText("aiChat.recentTransactionsHeader");
+            for (int i = 0; i < limit; i++) {
+                Transaction tx = transactions.get(transactions.size() - 1 - i); // Get latest
+                summary += String.format("\n- %s: %s %.2f (%s)",
+                        tx.getDate().format(DateTimeFormatter.ISO_DATE),
+                        tx.getDescription(),
+                        tx.getAmount(), // Keep sign for AI to understand income/expense
+                        tx.getCategory().getName());
+            }
+        }
+        return summary;
     }
 
     private void sendMessage() {
-        String userInput = inputField.getText().trim();
-        if (userInput.isEmpty()) {
+        String message = inputField.getText().trim();
+        if (message.isEmpty()) {
             return;
         }
 
-        // 添加用户消息到聊天区域
-        appendMessage("用户", userInput, true);
+        appendMessage(currentUser.getUsername(), message, true);
         inputField.setText("");
 
-        // 显示"AI正在思考"的消息
-        JPanel typingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        typingPanel.setOpaque(false);
-        typingPanel.setName("typingIndicator");
-        typingPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
-
-        // 创建AI头像
-        JPanel aiAvatar = createAIAvatarPanel();
-        aiAvatar.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        aiAvatar.setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        aiAvatar.setOpaque(false);
-
-        String thinkingText = LanguageUtil.CHINESE.equals(LanguageUtil.getCurrentLanguage())
-                ? "AI助手正在思考..."
-                : "AI Assistant is thinking...";
-        JLabel typingLabel = new JLabel(thinkingText);
-        typingLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
-
-        typingPanel.add(aiAvatar);
-        typingPanel.add(typingLabel);
-        chatPanel.add(typingPanel);
-        chatPanel.revalidate();
-        chatPanel.repaint();
-        scrollToBottom();
-
-        // 获取用户的交易记录（如果有）
-        List<Transaction> transactions = null;
-        if (currentUser != null && currentUser.getAccounts() != null) {
-            transactions = new ArrayList<>();
-            for (Account account : currentUser.getAccounts()) {
-                if (account.getTransactions() != null) {
-                    transactions.addAll(account.getTransactions());
-                }
-            }
+        // Prepare context for AI
+        String transactionContext = summarizeTransactionsForAI();
+        String fullPrompt = message;
+        if (!transactionContext.isEmpty()) {
+            fullPrompt = LanguageUtil.getText("aiChat.promptPrefixWithContext") + "\n" +
+                    transactionContext + "\n\n" +
+                    LanguageUtil.getText("aiChat.userQueryHeader") + "\n" + message;
         }
 
-        // 为了处理流式输出，我们先创建并显示一个空的AI消息面板
-        // 移除"正在思考"指示器
-        for (Component comp : chatPanel.getComponents()) {
-            if (comp instanceof JPanel && "typingIndicator".equals(comp.getName())) {
-                chatPanel.remove(comp);
-                break;
-            }
-        }
-
-        // 准备一个空消息和面板，后续用于流式更新
-        currentStreamedMessage = "";
+        // Prepare for AI response (streaming or direct)
         prepareEmptyAIMessagePanel();
 
-        final List<Transaction> finalTransactions = transactions;
+        final String finalPrompt = fullPrompt; // For use in lambda
 
-        // 根据用户选择使用DeepSeek API或本地AI服务
-        if (useDeepSeekCheckBox.isSelected()) {
+        executorService.submit(() -> {
             try {
-                // 使用流式API
-                deepSeekService.streamChat(
-                        userInput,
-                        finalTransactions,
-                        // 部分响应回调 - 逐步更新UI
-                        partialText -> {
-                            SwingUtilities.invokeLater(() -> {
-                                currentStreamedMessage += partialText;
-                                updateStreamMessage(currentStreamedMessage);
+                if (useDeepSeekCheckBox.isSelected()) {
+                    // For DeepSeek, we'll use the streaming approach
+                    deepSeekService.streamChat(finalPrompt, transactionService.getTransactions(),
+                            this::updateStreamMessage, (String completeResponse) -> {
+                                // Stream finished, finalize message or do cleanup
+                                currentStreamedMessage = ""; // Reset for next message
+                                scrollToBottom();
                             });
-                        },
-                        // 完成回调
-                        completeText -> {
-                            SwingUtilities.invokeLater(() -> {
-                                // 最终更新并完成消息
-                                currentStreamedMessage = completeText;
-                                updateStreamMessage(currentStreamedMessage);
-                                currentAIMessagePanel = null;
-                                currentAIMessageArea = null;
-                            });
-                        });
+                } else {
+                    // For basic AIService (non-streaming)
+                    String aiResponse = aiService.getPersonalizedChatAdvice(finalPrompt,
+                            transactionService.getTransactions());
+                    SwingUtilities.invokeLater(() -> {
+                        // If we were streaming, we'd append to currentAIMessageArea.
+                        // Since it's a full response, we can replace the "typing..."
+                        if (currentAIMessageArea != null) {
+                            currentAIMessageArea.setText(aiResponse);
+                            // Adjust panel size after setting text
+                            chatPanel.revalidate();
+                            chatPanel.repaint();
+                        } else { // Fallback if streaming panel wasn't perfectly set up
+                            appendMessage("AI", aiResponse, false);
+                        }
+                        scrollToBottom();
+                    });
+                }
             } catch (Exception e) {
                 e.printStackTrace();
-                // 如果DeepSeek API调用失败，回退到本地AI服务
-                String fallbackResponse = "DeepSeek API调用失败，使用本地AI：\n\n"
-                        + aiService.getPersonalizedChatAdvice(userInput, finalTransactions);
-
                 SwingUtilities.invokeLater(() -> {
-                    currentStreamedMessage = fallbackResponse;
-                    updateStreamMessage(currentStreamedMessage);
-                    currentAIMessagePanel = null;
-                    currentAIMessageArea = null;
+                    String errorMsg = LanguageUtil.getText("aiChat.error.apiError") + ": " + e.getMessage();
+                    if (currentAIMessageArea != null) {
+                        currentAIMessageArea.setText(errorMsg);
+                        currentAIMessageArea.setForeground(Color.RED);
+                    } else {
+                        appendMessage("AI", errorMsg, false);
+                    }
+                    scrollToBottom();
                 });
             }
-        } else {
-            // 使用本地AI服务（非流式）
-            CompletableFuture.<String>supplyAsync(() -> {
-                return aiService.getPersonalizedChatAdvice(userInput, finalTransactions);
-            }, executorService).thenAccept(response -> {
-                SwingUtilities.invokeLater(() -> {
-                    // 完整更新消息
-                    currentStreamedMessage = response;
-                    updateStreamMessage(currentStreamedMessage);
-                    currentAIMessagePanel = null;
-                    currentAIMessageArea = null;
-                });
-            });
-        }
+        });
     }
 
-    /**
-     * 准备一个空的AI消息面板，用于流式更新
-     */
     private void prepareEmptyAIMessagePanel() {
-        LocalDateTime now = LocalDateTime.now();
-        String timeStr = now.format(TIME_FORMATTER);
+        // Create a new panel for the AI's message (bubble + avatar)
+        // This panel will contain the JTextArea that gets updated by the stream
 
-        // 创建消息气泡面板
-        JPanel bubblePanel = new JPanel(new BorderLayout(5, 5));
-        bubblePanel.setOpaque(false);
-
-        // AI头像（使用图片）
-        JPanel aiAvatar = createAIAvatarPanel();
-        aiAvatar.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        aiAvatar.setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-        aiAvatar.setOpaque(false);
-
-        // 消息内容（开始为空）
-        currentAIMessageArea = new JTextArea("");
-        currentAIMessageArea.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
+        // Re-use bubble creation logic for consistency
+        currentAIMessageArea = new JTextArea(LanguageUtil.getText("aiChat.typing")); // Initial "Typing..."
+        currentAIMessageArea.setEditable(false);
         currentAIMessageArea.setLineWrap(true);
         currentAIMessageArea.setWrapStyleWord(true);
-        currentAIMessageArea.setEditable(false);
-        currentAIMessageArea.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
+        currentAIMessageArea.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         currentAIMessageArea.setOpaque(false);
+        currentAIMessageArea.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
 
-        // 消息气泡容器
-        JPanel bubbleContainer = new JPanel();
-        bubbleContainer.setLayout(new BoxLayout(bubbleContainer, BoxLayout.Y_AXIS));
-        bubbleContainer.setOpaque(false);
-
-        // 时间标签 - 移到顶部
-        JLabel timeLabel = new JLabel(timeStr, JLabel.LEFT);
-        timeLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_PLAIN));
-        timeLabel.setForeground(Color.GRAY);
-
-        // 消息内容面板 - 圆角灰色气泡
-        JPanel messagePanel = new JPanel() {
+        // Create the bubble background for the AI's streaming message
+        JPanel textBubble = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2d = (Graphics2D) g.create();
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2d.setColor(new Color(230, 230, 230));
-
-                // 绘制圆角矩形
-                int arc = 20; // 圆角大小
-                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
+                g2d.setColor(new Color(240, 240, 240)); // Light gray bubble for AI
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
                 g2d.dispose();
                 super.paintComponent(g);
             }
         };
-        messagePanel.setOpaque(false);
-        messagePanel.setLayout(new BorderLayout());
-        messagePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        messagePanel.add(currentAIMessageArea);
+        textBubble.setOpaque(false);
+        textBubble.add(currentAIMessageArea, BorderLayout.CENTER);
 
-        // 先添加时间，再添加消息
-        bubbleContainer.add(timeLabel);
-        bubbleContainer.add(Box.createVerticalStrut(5)); // 添加间距
-        bubbleContainer.add(messagePanel);
+        // Apply similar width constraints as other messages
+        int maxWidth = 300;
+        if (scrollPane != null && scrollPane.getViewport() != null) {
+            int viewportWidth = scrollPane.getViewport().getWidth();
+            if (viewportWidth > 0) {
+                maxWidth = (int) (viewportWidth * 0.70); // AI can be a bit wider
+                if (maxWidth < 200)
+                    maxWidth = 200;
+            }
+        }
+        textBubble.setMaximumSize(new Dimension(maxWidth, Integer.MAX_VALUE));
+        // textBubble.setPreferredSize(new Dimension(maxWidth, 60)); // Avoid fixed
+        // preferred height initially for typing
 
-        // 组装AI消息面板
-        JPanel aiMessagePanel = new JPanel(new BorderLayout(10, 0));
-        aiMessagePanel.setOpaque(false);
-        aiMessagePanel.add(aiAvatar, BorderLayout.WEST);
-        aiMessagePanel.add(bubbleContainer, BorderLayout.CENTER);
+        JPanel aiAvatar = createAIAvatarPanel();
 
-        // 在左侧添加一些空间
-        JPanel wrapperPanel = new JPanel(new BorderLayout());
-        wrapperPanel.setOpaque(false);
-        wrapperPanel.add(aiMessagePanel, BorderLayout.CENTER);
-        wrapperPanel.add(Box.createHorizontalStrut(80), BorderLayout.EAST);
+        // This is the main panel for one AI message row (avatar + bubble)
+        JPanel aiMessageRowPanel = new JPanel(new GridBagLayout());
+        aiMessageRowPanel.setOpaque(false);
+        aiMessageRowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        bubblePanel.add(wrapperPanel, BorderLayout.CENTER);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 5, 0, 5);
+        gbc.anchor = GridBagConstraints.PAGE_START;
 
-        // 添加边距
-        JPanel paddingPanel = new JPanel(new BorderLayout());
-        paddingPanel.setOpaque(false);
-        paddingPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        paddingPanel.add(bubblePanel);
+        // AI Avatar on the left
+        gbc.gridx = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        aiMessageRowPanel.add(aiAvatar, gbc);
 
-        // 保存引用以便后续更新
-        currentAIMessagePanel = paddingPanel;
+        // AI Bubble on the right
+        gbc.gridx = 1;
+        gbc.weightx = 1.0; // Bubble takes remaining space
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        aiMessageRowPanel.add(textBubble, gbc);
 
-        // 添加到聊天面板
-        chatPanel.add(currentAIMessagePanel);
+        // Add a little vertical space before this new message panel
+        chatPanel.add(Box.createVerticalStrut(10));
+        chatPanel.add(aiMessageRowPanel); // Add the structured row panel
+        currentAIMessagePanel = aiMessageRowPanel; // Store reference to the whole row panel
+
         chatPanel.revalidate();
         chatPanel.repaint();
-
-        // 记录聊天历史
-        chatHistory.add("AI助手: ");
-
-        // 自动滚动到底部
         scrollToBottom();
     }
 
-    /**
-     * 更新流式消息内容
-     * 
-     * @param text 当前累积的消息文本
-     */
-    private void updateStreamMessage(String text) {
-        if (currentAIMessageArea != null) {
-            currentAIMessageArea.setText(text);
+    private synchronized void updateStreamMessage(String textChunk) {
+        SwingUtilities.invokeLater(() -> {
+            if (currentAIMessageArea != null) {
+                if (currentStreamedMessage.isEmpty() && textChunk.equals(LanguageUtil.getText("aiChat.typing"))) {
+                    // If the first chunk is still "Typing...", don't append, wait for real content
+                    return;
+                }
+                if (currentStreamedMessage.equals(LanguageUtil.getText("aiChat.typing"))
+                        || currentAIMessageArea.getText().equals(LanguageUtil.getText("aiChat.typing"))) {
+                    currentStreamedMessage = ""; // Clear "Typing..."
+                    currentAIMessageArea.setText("");
+                }
+                currentStreamedMessage += textChunk;
+                currentAIMessageArea.append(textChunk); // Append the new chunk
 
-            // 更新聊天历史
-            if (!chatHistory.isEmpty()) {
-                chatHistory.set(chatHistory.size() - 1, "AI助手: " + text);
+                // Dynamically adjust the size of the JTextArea and its container
+                // This is a bit tricky with BoxLayout, might need to revalidate the parent
+                currentAIMessageArea.getParent().revalidate(); // Revalidate textBubble
+                currentAIMessagePanel.revalidate(); // Revalidate the whole message panel (avatar + bubble)
+                chatPanel.revalidate();
+                chatPanel.repaint();
+                scrollToBottom(); // Keep scrolling as new text arrives
             }
-
-            // 自动滚动到底部
-            scrollToBottom();
-        }
+        });
     }
 
     private void appendMessage(String sender, String message, boolean isUser) {
         LocalDateTime now = LocalDateTime.now();
         String timeStr = now.format(TIME_FORMATTER);
 
-        // 创建消息气泡面板
-        JPanel bubblePanel = new JPanel(new BorderLayout(5, 5));
+        JPanel messageRow = new JPanel(new GridBagLayout());
+        messageRow.setOpaque(false);
+        messageRow.setAlignmentX(Component.LEFT_ALIGNMENT); // Needed for BoxLayout.Y_AXIS parent (chatPanel)
+
+        JPanel avatarPanel = isUser ? createUserAvatarPanel() : createAIAvatarPanel();
+        // avatarPanel.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE)); // Set
+        // in create methods
+        // avatarPanel.setOpaque(false); // Set in create methods
+
+        JPanel bubbleWithTimePanel = createBubbleWithTimePanel(message, timeStr, isUser);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(2, 5, 2, 5);
+        gbc.anchor = GridBagConstraints.PAGE_START; // All items align to the top of their cell
+        gbc.weighty = 0; // Do not stretch vertically; prefer compact height
+
+        if (isUser) {
+            // User messages: [Glue] [Bubble] [Avatar]
+            // Glue pushes Bubble and Avatar to the right.
+            gbc.gridx = 0;
+            gbc.weightx = 1.0; // Glue takes up all extra horizontal space
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            messageRow.add(Box.createHorizontalStrut(0), gbc); // Strut acts as glue here
+
+            gbc.gridx = 1;
+            gbc.weightx = 0; // Bubble takes its preferred width, constrained by setMaximumSize
+            gbc.fill = GridBagConstraints.NONE; // Do not fill horizontally beyond preferred size
+            gbc.anchor = GridBagConstraints.PAGE_END; // Anchor bubble to the right of its cell (before avatar)
+            messageRow.add(bubbleWithTimePanel, gbc);
+
+            gbc.gridx = 2;
+            gbc.weightx = 0;
+            gbc.fill = GridBagConstraints.NONE;
+            gbc.anchor = GridBagConstraints.PAGE_END; // Anchor avatar to the far right
+            messageRow.add(avatarPanel, gbc);
+        } else {
+            // AI messages: [Avatar] [Bubble] [Glue]
+            // Glue pushes Avatar and Bubble to the left.
+            gbc.gridx = 0;
+            gbc.weightx = 0; // Avatar is fixed size
+            gbc.fill = GridBagConstraints.NONE;
+            messageRow.add(avatarPanel, gbc);
+
+            gbc.gridx = 1;
+            gbc.weightx = 0; // Bubble takes its preferred width, constrained by setMaximumSize
+                             // If we want bubble to expand with weightx=1, fill=HORIZONTAL might be needed
+            gbc.fill = GridBagConstraints.HORIZONTAL; // Let AI bubble take available space if message is long
+            gbc.anchor = GridBagConstraints.PAGE_START; // Ensure bubble content aligns left within its cell
+            messageRow.add(bubbleWithTimePanel, gbc);
+
+            gbc.gridx = 2;
+            gbc.weightx = 1.0; // Glue takes up all extra horizontal space
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            messageRow.add(Box.createHorizontalStrut(0), gbc); // Strut acts as glue
+        }
+
+        chatPanel.add(messageRow);
+        chatPanel.add(Box.createVerticalStrut(5));
+        chatPanel.revalidate();
+        chatPanel.repaint();
+
+        chatHistory.add(sender + ": " + message);
+        scrollToBottom();
+    }
+
+    private JPanel createBubbleWithTimePanel(String message, String timeStr, boolean isUser) {
+        JPanel bubblePanel = new JPanel(new BorderLayout(0, 3)); // Small gap for time
         bubblePanel.setOpaque(false);
 
-        // 消息内容
         JTextArea messageArea = new JTextArea(message);
         messageArea.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         messageArea.setLineWrap(true);
         messageArea.setWrapStyleWord(true);
         messageArea.setEditable(false);
+        messageArea.setOpaque(false);
+        messageArea.setBorder(BorderFactory.createEmptyBorder(10, 12, 5, 12)); // Adjusted padding
 
-        // 根据消息发送者设置不同的样式
+        JLabel timeLabel = new JLabel(timeStr);
+        timeLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_PLAIN));
+        timeLabel.setForeground(new Color(150, 150, 150)); // Slightly lighter gray for time
+
+        JPanel bubbleBackground = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (isUser) {
+                    g2d.setColor(new Color(66, 133, 244, 220));
+                } else {
+                    g2d.setColor(new Color(240, 240, 240));
+                }
+                g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                g2d.dispose();
+                super.paintComponent(g);
+            }
+        };
+        bubbleBackground.setOpaque(false);
+        bubbleBackground.add(messageArea, BorderLayout.CENTER);
+
+        bubblePanel.add(bubbleBackground, BorderLayout.CENTER);
+
+        // Panel for time, to control its alignment within the bubble
+        JPanel timePanel = new JPanel(new FlowLayout(isUser ? FlowLayout.RIGHT : FlowLayout.LEFT, 12, 0));
+        timePanel.setOpaque(false);
+        timePanel.add(timeLabel);
+        bubblePanel.add(timePanel, BorderLayout.SOUTH);
+
         if (isUser) {
-            // 用户消息 - 靠右，蓝色背景
-            bubblePanel.setLayout(new BorderLayout(5, 5));
-
-            // 用户头像（使用图片）
-            JPanel userAvatar = createUserAvatarPanel();
-            userAvatar.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            userAvatar.setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            userAvatar.setOpaque(false);
-
-            // 消息气泡容器
-            JPanel bubbleContainer = new JPanel();
-            bubbleContainer.setLayout(new BoxLayout(bubbleContainer, BoxLayout.Y_AXIS));
-            bubbleContainer.setOpaque(false);
-
-            // 时间标签 - 移到顶部
-            JLabel timeLabel = new JLabel(timeStr, JLabel.RIGHT);
-            timeLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_PLAIN));
-            timeLabel.setForeground(Color.GRAY);
-
-            // 消息内容面板 - 圆角蓝色气泡 - 进一步淡化颜色
-            JPanel messagePanel = new JPanel() {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.setColor(new Color(66, 133, 244, 150)); // 降低透明度到150
-
-                    // 绘制圆角矩形
-                    int arc = 20; // 圆角大小
-                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
-                    g2d.dispose();
-                    super.paintComponent(g);
-                }
-            };
-            messagePanel.setOpaque(false);
-            messagePanel.setLayout(new BorderLayout());
-            messagePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-
-            messageArea.setOpaque(false);
-            messageArea.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
-            messageArea.setForeground(Color.BLACK);
-            messagePanel.add(messageArea);
-
-            // 先添加时间，再添加消息
-            bubbleContainer.add(timeLabel);
-            bubbleContainer.add(Box.createVerticalStrut(5)); // 添加间距
-            bubbleContainer.add(messagePanel);
-
-            // 组装用户消息面板
-            JPanel userMessagePanel = new JPanel(new BorderLayout(10, 0));
-            userMessagePanel.setOpaque(false);
-            userMessagePanel.add(bubbleContainer, BorderLayout.CENTER);
-            userMessagePanel.add(userAvatar, BorderLayout.EAST);
-
-            // 在右侧添加一些空间
-            JPanel wrapperPanel = new JPanel(new BorderLayout());
-            wrapperPanel.setOpaque(false);
-            wrapperPanel.add(userMessagePanel, BorderLayout.CENTER);
-            wrapperPanel.add(Box.createHorizontalStrut(80), BorderLayout.WEST);
-
-            bubblePanel.add(wrapperPanel, BorderLayout.CENTER);
+            messageArea.setForeground(Color.WHITE);
         } else {
-            // AI消息 - 靠左，灰色背景
-            bubblePanel.setLayout(new BorderLayout(5, 5));
-
-            // AI头像（使用图片）
-            JPanel aiAvatar = createAIAvatarPanel();
-            aiAvatar.setPreferredSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            aiAvatar.setMaximumSize(new Dimension(AVATAR_SIZE, AVATAR_SIZE));
-            aiAvatar.setOpaque(false);
-
-            // 消息气泡容器
-            JPanel bubbleContainer = new JPanel();
-            bubbleContainer.setLayout(new BoxLayout(bubbleContainer, BoxLayout.Y_AXIS));
-            bubbleContainer.setOpaque(false);
-
-            // 时间标签 - 移到顶部
-            JLabel timeLabel = new JLabel(timeStr, JLabel.LEFT);
-            timeLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_SMALL, FontLoader.STYLE_PLAIN));
-            timeLabel.setForeground(Color.GRAY);
-
-            // 消息内容面板 - 圆角灰色气泡
-            JPanel messagePanel = new JPanel() {
-                @Override
-                protected void paintComponent(Graphics g) {
-                    Graphics2D g2d = (Graphics2D) g.create();
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.setColor(new Color(230, 230, 230));
-
-                    // 绘制圆角矩形
-                    int arc = 20; // 圆角大小
-                    g2d.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
-                    g2d.dispose();
-                    super.paintComponent(g);
-                }
-            };
-            messagePanel.setOpaque(false);
-            messagePanel.setLayout(new BorderLayout());
-            messagePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-
-            messageArea.setOpaque(false);
-            messageArea.setBorder(BorderFactory.createEmptyBorder(12, 15, 12, 15));
             messageArea.setForeground(Color.BLACK);
-            messagePanel.add(messageArea);
-
-            // 先添加时间，再添加消息
-            bubbleContainer.add(timeLabel);
-            bubbleContainer.add(Box.createVerticalStrut(5)); // 添加间距
-            bubbleContainer.add(messagePanel);
-
-            // 组装AI消息面板
-            JPanel aiMessagePanel = new JPanel(new BorderLayout(10, 0));
-            aiMessagePanel.setOpaque(false);
-            aiMessagePanel.add(aiAvatar, BorderLayout.WEST);
-            aiMessagePanel.add(bubbleContainer, BorderLayout.CENTER);
-
-            // 在左侧添加一些空间
-            JPanel wrapperPanel = new JPanel(new BorderLayout());
-            wrapperPanel.setOpaque(false);
-            wrapperPanel.add(aiMessagePanel, BorderLayout.CENTER);
-            wrapperPanel.add(Box.createHorizontalStrut(80), BorderLayout.EAST);
-
-            bubblePanel.add(wrapperPanel, BorderLayout.CENTER);
         }
 
-        // 添加边距
-        JPanel paddingPanel = new JPanel(new BorderLayout());
-        paddingPanel.setOpaque(false);
-        paddingPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        paddingPanel.add(bubblePanel);
+        // Width calculation for the bubblePanel
+        int desiredMaxWidth;
+        float widthPercentage = isUser ? 0.60f : 0.70f; // User bubbles slightly narrower
 
-        // 添加到聊天面板
-        chatPanel.add(paddingPanel);
-        chatPanel.revalidate();
-        chatPanel.repaint();
+        if (scrollPane != null && scrollPane.getViewport() != null && scrollPane.getViewport().getWidth() > 0) {
+            desiredMaxWidth = (int) (scrollPane.getViewport().getWidth() * widthPercentage);
+        } else if (getParent() != null && getParent().getWidth() > 0) { // Fallback to parent width
+            desiredMaxWidth = (int) (getParent().getWidth() * widthPercentage);
+        } else {
+            desiredMaxWidth = 350; // Absolute fallback
+        }
 
-        // 记录聊天历史
-        chatHistory.add(sender + ": " + message);
+        if (desiredMaxWidth < 150)
+            desiredMaxWidth = 150; // Min width
 
-        // 自动滚动到底部
-        scrollToBottom();
+        // Important: JTextArea needs a preferred size that allows wrapping.
+        // We give it a constrained width (maxWidth) and let height be preferred.
+        messageArea.setSize(new Dimension(desiredMaxWidth, Integer.MAX_VALUE)); // Hint for preferred size calculation
+                                                                                // with line wrapping.
+
+        // The bubblePanel's size should be primarily dictated by the messageArea's
+        // wrapped content.
+        // Set MaximumSize to control its upper bound when chatPanel (BoxLayout) tries
+        // to give it space.
+        bubblePanel.setMaximumSize(new Dimension(desiredMaxWidth, Integer.MAX_VALUE));
+
+        // To ensure the bubble doesn't shrink too much if message is short,
+        // one could set a minimum size, but typically preferred size of JTextArea
+        // should handle this.
+        // bubblePanel.setMinimumSize(new Dimension(50,
+        // bubblePanel.getPreferredSize().height));
+
+        // For BoxLayout X_AXIS in parent (messageRow), we need to set alignment
+        // However, bubblePanel is added to messageRow using BoxLayout's default add
+        // (which respects preferred size)
+        // The messageRow itself uses createHorizontalGlue to manage alignment.
+        return bubblePanel;
     }
 
     private void scrollToBottom() {

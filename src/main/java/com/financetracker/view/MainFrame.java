@@ -1,9 +1,12 @@
-
 package com.financetracker.view;
 
 import com.financetracker.model.User;
 import com.financetracker.util.LanguageUtil;
 import com.financetracker.util.FontLoader;
+import com.financetracker.service.TransactionService;
+import com.financetracker.model.Account; // Added for CSV import account selection
+import com.financetracker.model.Category; // Added for CSV import
+import com.financetracker.model.Transaction; // Added for CSV import
 
 import javax.swing.*;
 //import javax.swing.text.JTextComponent;
@@ -11,6 +14,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.logging.Logger;
+import java.util.logging.Level; // Added import for Level
 //import java.awt.event.ActionEvent;
 //import java.awt.event.ActionListener;
 import javax.swing.border.EmptyBorder;
@@ -20,6 +24,17 @@ import java.awt.RenderingHints;
 import javax.swing.plaf.basic.BasicToggleButtonUI;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonModel;
+import java.io.BufferedReader; // Added
+import java.io.FileReader; // Added
+import java.io.IOException; // Added
+import java.time.LocalDate; // Added
+import java.time.format.DateTimeFormatter; // Added
+import java.time.format.DateTimeParseException; // Added
+import java.util.ArrayList; // Added
+import java.util.List; // Added
+import java.nio.charset.StandardCharsets; // Added for UTF-8 CSV reading
+import java.util.Map; // Added for category cache
+import java.util.HashMap; // Added for category cache
 
 /**
  * 应用程序的主窗口
@@ -27,6 +42,7 @@ import javax.swing.ButtonModel;
 public class MainFrame extends JFrame {
 
     private User currentUser;
+    private TransactionService transactionService;
     private JPanel contentPanel;
     private DashboardPanel dashboardPanel;
     private OverviewPanel overviewPanel;
@@ -62,6 +78,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame(User user) {
         this.currentUser = user;
+        this.transactionService = new TransactionService();
 
         // 设置用户的语言偏好
         if (user.getPreferredLanguage() != null) {
@@ -107,10 +124,10 @@ public class MainFrame extends JFrame {
 
     private void initComponents() {
         // 初始化面板
-        dashboardPanel = new DashboardPanel(currentUser);
-        overviewPanel = new OverviewPanel(currentUser);
-        accountPanel = new AccountPanel(currentUser);
-        aiChatPanel = new AIChatPanel(currentUser);
+        dashboardPanel = new DashboardPanel(currentUser, transactionService);
+        overviewPanel = new OverviewPanel(currentUser, transactionService);
+        accountPanel = new AccountPanel(currentUser, transactionService);
+        aiChatPanel = new AIChatPanel(currentUser, transactionService);
     }
 
     private void setupUI() {
@@ -620,21 +637,210 @@ public class MainFrame extends JFrame {
             }
 
             public String getDescription() {
-                return LanguageUtil.getText("file.csv_files");
+                return LanguageUtil.getText("file.csv_files") + " (*.csv)";
             }
         });
 
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
-            // 这里添加导入CSV文件的逻辑
-            JOptionPane.showMessageDialog(this,
-                    LanguageUtil.getText("file.imported") + " " + selectedFile.getName(),
-                    LanguageUtil.getText("file.import_data"),
-                    JOptionPane.INFORMATION_MESSAGE);
 
-            // 导入后切换到对应面板，实现面板互通
-            showPanel("overview");
+            // Step 1: Select Account for Import (Simplified)
+            // In a real app, this would come from AccountService or a more robust selection
+            // mechanism
+            Account[] availableAccounts = {
+                    new Account("CSV Import - Bank", Account.AccountType.BANK),
+                    new Account("CSV Import - Cash", Account.AccountType.CASH),
+                    // Potentially add more, or get them from AccountPanel's JComboBox model if
+                    // accessible
+                    // For now, using a limited list.
+            };
+            Account selectedAccountForImport = (Account) JOptionPane.showInputDialog(
+                    this,
+                    "Select an account for the imported transactions:",
+                    "Assign Account for CSV Import",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    availableAccounts,
+                    availableAccounts[0]);
+
+            if (selectedAccountForImport == null) {
+                JOptionPane.showMessageDialog(this, "CSV import cancelled: No account selected.", "Import Cancelled",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Step 2: Process CSV File
+            List<Transaction> importedTransactions = new ArrayList<>();
+            List<String> errorMessages = new ArrayList<>();
+            DateTimeFormatter csvDateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            Map<String, Category> categoryCache = new HashMap<>(); // Category cache
+
+            try (BufferedReader br = new BufferedReader(new FileReader(selectedFile, StandardCharsets.UTF_8))) { // Specified
+                // UTF-8
+                String line;
+                boolean isFirstLine = true; // To skip header
+                int lineNumber = 0;
+
+                while ((line = br.readLine()) != null) {
+                    lineNumber++;
+                    if (isFirstLine) {
+                        isFirstLine = false;
+                        // Optional: Validate header here against
+                        // "Date,Type,Description,Amount,Category"
+                        // For simplicity, we assume the header is correct and skip it.
+                        continue;
+                    }
+                    if (line.trim().isEmpty()) {
+                        continue; // Skip empty lines
+                    }
+
+                    String[] values = line.split(",");
+                    if (values.length < 5) {
+                        errorMessages.add("Line " + lineNumber + ": Not enough columns (expected 5, got "
+                                + values.length + "): \"" + line + "\"");
+                        continue;
+                    }
+
+                    try {
+                        String dateStr = values[0].trim();
+                        String typeStr = values[1].trim();
+                        String descriptionStr = values[2].trim();
+                        String amountStr = values[3].trim().replace("¥", "").trim(); // Remove currency symbols if
+                        // present
+                        String categoryStr = values[4].trim();
+
+                        LocalDate date = LocalDate.parse(dateStr, csvDateFormatter);
+                        double amount = Double.parseDouble(amountStr);
+
+                        Transaction.TransactionType type;
+                        // Assuming "Type" column in CSV is "Income" or "Expense" (or localized
+                        // versions)
+                        // This needs to be robust based on actual CSV content.
+                        if (typeStr.equalsIgnoreCase("Income") || typeStr.equalsIgnoreCase("收入")) {
+                            type = Transaction.TransactionType.INCOME;
+                            if (amount < 0)
+                                amount = -amount; // Ensure income is positive
+                        } else if (typeStr.equalsIgnoreCase("Expense") || typeStr.equalsIgnoreCase("支出")) {
+                            type = Transaction.TransactionType.EXPENSE;
+                            if (amount > 0)
+                                amount = -amount; // Ensure expense is negative for internal storage
+                        } else {
+                            errorMessages.add("Line " + lineNumber + ": Invalid transaction type '" + typeStr + "'");
+                            continue;
+                        }
+
+                        // For 'Amount', the problem states CSV has 'Amount'. If it's always positive in
+                        // CSV,
+                        // then TransactionType determines the sign.
+                        // If 'type' is EXPENSE, 'amount' should be stored negatively in Transaction
+                        // object
+                        // If 'type' is INCOME, 'amount' should be stored positively.
+                        // The constructor `Transaction` expects amount to be signed correctly.
+                        // The logic above tries to enforce this based on typeStr.
+
+                        // Get or create category from cache
+                        Category category = categoryCache.computeIfAbsent(categoryStr, name -> {
+                            // Check against pre-defined static categories in Category.java first
+                            // This is a simplified check. A more robust solution would iterate static
+                            // fields or use a registry.
+                            if (name.equalsIgnoreCase(Category.FOOD.getName()))
+                                return Category.FOOD;
+                            if (name.equalsIgnoreCase(Category.TRANSPORT.getName()))
+                                return Category.TRANSPORT;
+                            if (name.equalsIgnoreCase(Category.SHOPPING.getName()))
+                                return Category.SHOPPING;
+                            if (name.equalsIgnoreCase(Category.ENTERTAINMENT.getName()))
+                                return Category.ENTERTAINMENT;
+                            if (name.equalsIgnoreCase(Category.UTILITIES.getName()))
+                                return Category.UTILITIES;
+                            if (name.equalsIgnoreCase(Category.RENT.getName()))
+                                return Category.RENT;
+                            if (name.equalsIgnoreCase(Category.EDUCATION.getName()))
+                                return Category.EDUCATION;
+                            if (name.equalsIgnoreCase(Category.HEALTH.getName()))
+                                return Category.HEALTH;
+                            if (name.equalsIgnoreCase(Category.SALARY.getName()))
+                                return Category.SALARY;
+                            if (name.equalsIgnoreCase(Category.INVESTMENT.getName()))
+                                return Category.INVESTMENT;
+                            if (name.equalsIgnoreCase(Category.GIFT.getName()))
+                                return Category.GIFT;
+                            if (name.equalsIgnoreCase(Category.REFUND.getName()))
+                                return Category.REFUND;
+                            // Add checks for other static categories if any (e.g., Medical, Fitness,
+                            // Travel, Training from your CSV)
+                            // For now, create a new one if not matched
+                            return new Category(name);
+                        });
+
+                        String transactionId = "CSV-TX-" + System.currentTimeMillis() + "-"
+                                + importedTransactions.size();
+
+                        Transaction transaction = new Transaction(
+                                transactionId,
+                                date,
+                                amount, // This amount should now be correctly signed based on type
+                                descriptionStr,
+                                category,
+                                type,
+                                selectedAccountForImport);
+                        importedTransactions.add(transaction);
+
+                    } catch (DateTimeParseException e) {
+                        errorMessages.add("Line " + lineNumber + ": Invalid date format for '" + values[0]
+                                + "'. Expected yyyy-MM-dd. Error: " + e.getMessage());
+                    } catch (NumberFormatException e) {
+                        errorMessages.add("Line " + lineNumber + ": Invalid amount format for '" + values[3]
+                                + "'. Error: " + e.getMessage());
+                    } catch (Exception e) {
+                        errorMessages.add("Line " + lineNumber + ": Error processing line '" + line + "'. Error: "
+                                + e.getMessage());
+                        LOGGER.log(Level.WARNING, "Error processing CSV line " + lineNumber, e);
+                    }
+                }
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Error reading CSV file: " + e.getMessage(),
+                        "Import Error",
+                        JOptionPane.ERROR_MESSAGE);
+                LOGGER.log(Level.SEVERE, "Error reading CSV file", e);
+                return;
+            }
+
+            // Step 3: Add transactions to service and show summary
+            if (!importedTransactions.isEmpty()) {
+                for (Transaction tx : importedTransactions) {
+                    transactionService.addTransaction(tx); // This will trigger UI updates in panels
+                }
+            }
+
+            StringBuilder summaryMessage = new StringBuilder();
+            summaryMessage.append(LanguageUtil.getText("file.imported")).append(" ")
+                    .append(importedTransactions.size()).append(" transactions from ")
+                    .append(selectedFile.getName()).append(".\n");
+            if (!errorMessages.isEmpty()) {
+                summaryMessage.append("\nEncountered ").append(errorMessages.size()).append(" errors:\n");
+                for (int i = 0; i < Math.min(errorMessages.size(), 10); i++) {
+                    summaryMessage.append("- ").append(errorMessages.get(i)).append("\n");
+                }
+                if (errorMessages.size() > 10) {
+                    summaryMessage.append("...and ").append(errorMessages.size() - 10)
+                            .append(" more errors (see logs).\n");
+                }
+                JOptionPane.showMessageDialog(this,
+                        summaryMessage.toString(),
+                        importedTransactions.isEmpty() ? "Import Failed" : "Import Partially Successful",
+                        errorMessages.isEmpty() ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        summaryMessage.toString(),
+                        "Import Successful",
+                        JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            // Optional: Switch to a relevant panel after import
+            showPanel("overview"); // Or accountPanel, or dashboardPanel
         }
     }
 
