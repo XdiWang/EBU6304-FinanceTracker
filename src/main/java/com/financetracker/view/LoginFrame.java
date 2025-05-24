@@ -15,7 +15,7 @@ import java.util.regex.Pattern; // 引入正则表达式相关的类
 /**
  * 登录窗口 - 允许用户登录或注册
  */
-public class LoginFrame extends JFrame {//new
+public class LoginFrame extends JFrame {//new branch
 
     private JTextField usernameField;
     private JPasswordField passwordField;
