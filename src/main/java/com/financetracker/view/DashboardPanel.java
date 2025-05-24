@@ -72,7 +72,9 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
         // 颜色常量
         private static final Color INCOME_TEXT_COLOR = new Color(44, 165, 141); // #2CA58D
         private static final Color EXPENSE_TEXT_COLOR = new Color(231, 111, 81); // #E76F51
+  
         private static final Color CHART_OUTCOME_COLOR = new Color(137, 207, 200); // color of expense line in the chart
+
 
         public DashboardPanel(User user, TransactionService transactionService) {
                 this.currentUser = user;
@@ -210,11 +212,13 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
 
                 // 创建图表
                 chart = ChartFactory.createLineChart(
+
                                 null, // chart title
                                 "Date", // X-axis label
                                 "Amount (RMB)", // Y-axis label 
                                 trendDataset, // dataset
                                 PlotOrientation.VERTICAL, // chart diretion
+
                                 true, // 是否显示图例
                                 true, // 是否使用工具提示
                                 false // 是否使用URL链接
@@ -455,6 +459,7 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
                         // 确保在UI线程中更新UI组件
                         SwingUtilities.invokeLater(this::refreshDashboardData);
                 }
+
         }
 
         private JPanel createGreetingPanel() {
@@ -561,7 +566,9 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
                 // MOVED: 将 setLocationRelativeTo 移到 pack() 之后
                 monthYearDialog.setLocationRelativeTo(this);
                 monthYearDialog.setVisible(true);
+
         }
 // ...
+
 
 }

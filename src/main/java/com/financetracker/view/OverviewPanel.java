@@ -183,6 +183,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
                         Transaction::getCategory,
                         Collectors.summingDouble(t -> Math.abs(t.getAmount()))));
 
+
         pieDataset.clear();
         expensesByCategory.forEach((category, total) -> {
             pieDataset.setValue(category.getName(), total);
@@ -225,6 +226,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         JLabel amountLabel = new JLabel(String.format("- ¥%.2f", totalAmount));
         amountLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         amountLabel.setForeground(Color.RED);
+
 
         panel.add(nameLabel, BorderLayout.CENTER);
         panel.add(amountLabel, BorderLayout.EAST);
@@ -365,6 +367,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         monthYearDialog.setLayout(new BorderLayout(10, 10));
         // REMOVED: monthYearDialog.setSize(300, 150);
 
+
         JPanel selectionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
         YearMonth currentChoice = YearMonth.now();
@@ -374,11 +377,14 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
             }
         } catch (Exception ex) {
             // Keep currentChoice as YearMonth.now() if parsing fails
+
             System.err.println("Error parsing monthLabel in showMonthYearChooser: " + ex.getMessage());
+
         }
 
         SpinnerModel yearModel = new SpinnerNumberModel(currentChoice.getYear(), 1900, 2100, 1);
         JSpinner yearSpinner = new JSpinner(yearModel);
+
         yearSpinner.setEditor(new JSpinner.NumberEditor(yearSpinner, "#")); // Format to show no commas
 
         String[] monthNames = new DateFormatSymbols().getMonths();
@@ -391,6 +397,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         JComboBox<String> monthComboBox = new JComboBox<>(displayMonthNames);
         monthComboBox.setSelectedIndex(currentChoice.getMonthValue() - 1); // MonthValue is 1-12
 
+
         selectionPanel.add(new JLabel("Month:"));
         selectionPanel.add(monthComboBox);
         selectionPanel.add(new JLabel("Year:"));
@@ -402,12 +409,16 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
 
         okButton.addActionListener(e -> {
             int year = (Integer) yearSpinner.getValue();
+
             int month = monthComboBox.getSelectedIndex() + 1; // JComboBox index is 0-11
+
             YearMonth selectedYearMonth = YearMonth.of(year, month);
             if (monthLabel != null) {
                 monthLabel.setText(selectedYearMonth.format(DateTimeFormatter.ofPattern("yyyy/MM")));
             }
+
             refreshOverviewData(); // Refresh the overview panel with the new month/year
+
             monthYearDialog.dispose();
         });
 
@@ -419,14 +430,15 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         monthYearDialog.add(selectionPanel, BorderLayout.CENTER);
         monthYearDialog.add(buttonPanel, BorderLayout.SOUTH);
 
+
         // ADDED: 自动调整对话框大小以适应内容
         monthYearDialog.pack();
         // MOVED: 将 setLocationRelativeTo 移到 pack() 之后
         monthYearDialog.setLocationRelativeTo(this);
+
         monthYearDialog.setVisible(true);
     }
 // ...
-
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
