@@ -17,6 +17,7 @@ public class Transaction {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static int transactionCounter = 1000;
 
+    // 使用枚举法
     public enum TransactionType {
         INCOME("收入"),
         EXPENSE("支出");
