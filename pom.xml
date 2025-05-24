@@ -6,12 +6,15 @@
 
     <groupId>com.financetracker</groupId>
     <artifactId>finance-tracker</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>4.0.0</version>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <app.version>4.0.0</app.version>
+        <app.build.number>001</app.build.number>
+        <app.release.date>2025.05</app.release.date>
     </properties>
 
     <dependencies>
@@ -21,28 +24,35 @@
             <artifactId>flatlaf</artifactId>
             <version>2.6</version>
         </dependency>
-        
+
         <!-- JFreeChart for visualization -->
         <dependency>
             <groupId>org.jfree</groupId>
             <artifactId>jfreechart</artifactId>
             <version>1.5.3</version>
         </dependency>
-        
+
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.29</version> <!-- 你可以使用最新的2.x版本 -->
+        </dependency>
+
+
         <!-- Apache Commons CSV for CSV file handling -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
             <version>1.9.0</version>
         </dependency>
-        
+
         <!-- JSON handling -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.13.3</version>
         </dependency>
-        
+
         <!-- JUnit for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -50,7 +60,7 @@
             <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Simple Java AI library -->
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -120,12 +130,12 @@
                                 <jdkPreference>preferJre</jdkPreference>
                             </jre>
                             <versionInfo>
-                                <fileVersion>1.0.0.0</fileVersion>
-                                <txtFileVersion>1.0.0.0</txtFileVersion>
+                                <fileVersion>4.0.0.0</fileVersion>
+                                <txtFileVersion>4.0.0.0</txtFileVersion>
                                 <fileDescription>AI驱动个人财务追踪器</fileDescription>
                                 <copyright>FinanceTracker</copyright>
-                                <productVersion>1.0.0.0</productVersion>
-                                <txtProductVersion>1.0.0.0</txtProductVersion>
+                                <productVersion>4.0.0.0</productVersion>
+                                <txtProductVersion>4.0.0.0</txtProductVersion>
                                 <productName>Finance Tracker</productName>
                                 <internalName>FinanceTracker</internalName>
                                 <originalFilename>FinanceTracker.exe</originalFilename>
