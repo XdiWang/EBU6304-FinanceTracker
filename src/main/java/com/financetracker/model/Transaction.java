@@ -111,6 +111,7 @@ public class Transaction {
         this.account = account;
     }
 
+    // 改写生成字符串的方法
     @Override
     public String toString() {
         String formattedAmount = String.format("%.2f", amount);
