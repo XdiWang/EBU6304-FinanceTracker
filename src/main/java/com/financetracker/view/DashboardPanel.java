@@ -72,7 +72,9 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
         // 颜色常量
         private static final Color INCOME_TEXT_COLOR = new Color(44, 165, 141); // #2CA58D
         private static final Color EXPENSE_TEXT_COLOR = new Color(231, 111, 81); // #E76F51
-        private static final Color CHART_OUTCOME_COLOR = new Color(137, 207, 200); // 图表中的支出线颜色
+  
+        private static final Color CHART_OUTCOME_COLOR = new Color(137, 207, 200); // color of expense line in the chart
+
 
         public DashboardPanel(User user, TransactionService transactionService) {
                 this.currentUser = user;
@@ -210,11 +212,13 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
 
                 // 创建图表
                 chart = ChartFactory.createLineChart(
-                                null, // 图表标题
-                                "Date", // X轴标签 - 直接使用字符串
-                                "Amount (RMB)", // Y轴标签 - 直接使用字符串
-                                trendDataset, // 数据集
-                                PlotOrientation.VERTICAL, // 图表方向
+
+                                null, // chart title
+                                "Date", // X-axis label
+                                "Amount (RMB)", // Y-axis label 
+                                trendDataset, // dataset
+                                PlotOrientation.VERTICAL, // chart diretion
+
                                 true, // 是否显示图例
                                 true, // 是否使用工具提示
                                 false // 是否使用URL链接
@@ -455,6 +459,7 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
                         // 确保在UI线程中更新UI组件
                         SwingUtilities.invokeLater(this::refreshDashboardData);
                 }
+
         }
 
         private JPanel createGreetingPanel() {
@@ -489,29 +494,44 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
                 return greetingPanel;
         }
 
+        // DashboardPanel.java
+// ...
         private void showMonthYearChooser() {
                 // 创建一个简单的月份年份选择对话框
                 JDialog monthYearDialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Select Month and Year",
-                                Dialog.ModalityType.APPLICATION_MODAL);
+                        Dialog.ModalityType.APPLICATION_MODAL);
                 monthYearDialog.setLayout(new BorderLayout(10, 10));
-                monthYearDialog.setSize(300, 150);
-                monthYearDialog.setLocationRelativeTo(this);
+                // REMOVED: monthYearDialog.setSize(300, 150);
 
                 JPanel selectionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
+                YearMonth currentChoice = YearMonth.now(); // Default to current month
+                try {
+                        // Attempt to parse the current dateLabel text to pre-fill the chooser
+                        if (dateLabel != null && dateLabel.getText() != null && !dateLabel.getText().isEmpty()) {
+                                currentChoice = YearMonth.parse(dateLabel.getText(), DateTimeFormatter.ofPattern("yyyy/MM"));
+                        }
+                } catch (Exception ex) {
+                        // If parsing fails, currentChoice remains YearMonth.now()
+                        System.err.println("Error parsing dateLabel in showMonthYearChooser: " + ex.getMessage());
+                }
+
+
                 // 年份选择
-                SpinnerModel yearModel = new SpinnerNumberModel(YearMonth.now().getYear(), 1900, 2100, 1);
+                SpinnerModel yearModel = new SpinnerNumberModel(currentChoice.getYear(), 1900, 2100, 1);
                 JSpinner yearSpinner = new JSpinner(yearModel);
-                yearSpinner.setEditor(new JSpinner.NumberEditor(yearSpinner, "#"));
+                yearSpinner.setEditor(new JSpinner.NumberEditor(yearSpinner, "#")); // Format to show no commas
 
                 // 月份选择 (1-12)
                 String[] monthNames = new DateFormatSymbols().getMonths();
-                // 移除最后一个空字符串 (如果存在)
+                // DateFormatSymbols().getMonths() returns an array of 13 strings (index 12 is empty).
+                // We only need the first 12.
                 int monthCount = 12;
                 String[] displayMonthNames = new String[monthCount];
                 System.arraycopy(monthNames, 0, displayMonthNames, 0, monthCount);
+
                 JComboBox<String> monthComboBox = new JComboBox<>(displayMonthNames);
-                monthComboBox.setSelectedIndex(YearMonth.now().getMonthValue() - 1);
+                monthComboBox.setSelectedIndex(currentChoice.getMonthValue() - 1); // MonthValue is 1-12, JComboBox index 0-11
 
                 selectionPanel.add(new JLabel("Month:"));
                 selectionPanel.add(monthComboBox);
@@ -526,7 +546,9 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
                         int year = (Integer) yearSpinner.getValue();
                         int month = monthComboBox.getSelectedIndex() + 1; // JComboBox索引从0开始
                         YearMonth selectedYearMonth = YearMonth.of(year, month);
-                        dateLabel.setText(selectedYearMonth.format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                        if (dateLabel != null) {
+                                dateLabel.setText(selectedYearMonth.format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                        }
                         refreshDashboardData(); // 使用新的月份刷新数据
                         monthYearDialog.dispose();
                 });
@@ -538,6 +560,15 @@ public class DashboardPanel extends JPanel implements PropertyChangeListener {
 
                 monthYearDialog.add(selectionPanel, BorderLayout.CENTER);
                 monthYearDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+                // ADDED: 自动调整对话框大小以适应内容
+                monthYearDialog.pack();
+                // MOVED: 将 setLocationRelativeTo 移到 pack() 之后
+                monthYearDialog.setLocationRelativeTo(this);
                 monthYearDialog.setVisible(true);
+
         }
+// ...
+
+
 }

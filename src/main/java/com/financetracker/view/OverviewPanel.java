@@ -183,6 +183,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
                         Transaction::getCategory,
                         Collectors.summingDouble(t -> Math.abs(t.getAmount()))));
 
+
         pieDataset.clear();
         expensesByCategory.forEach((category, total) -> {
             pieDataset.setValue(category.getName(), total);
@@ -226,6 +227,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         amountLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         amountLabel.setForeground(Color.RED);
 
+
         panel.add(nameLabel, BorderLayout.CENTER);
         panel.add(amountLabel, BorderLayout.EAST);
         return panel;
@@ -255,14 +257,15 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         return chart;
     }
 
+    // OverviewPanel.java
+// ...
     private void showEditCategoryDialog(String categoryName) {
         if (editDialog != null && editDialog.isVisible()) {
             editDialog.dispose();
         }
 
         editDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Edit " + categoryName, true);
-        editDialog.setSize(400, 200);
-        editDialog.setLocationRelativeTo(this);
+        // REMOVED: editDialog.setSize(400, 200);
         editDialog.setLayout(new BorderLayout());
         editDialog.getContentPane().setBackground(Color.WHITE);
 
@@ -276,9 +279,9 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
         JTextField nameField = new JTextField(categoryName);
         nameField.setFont(new Font("Arial", Font.PLAIN, 14));
 
-        JLabel detailsLabel = new JLabel("Add details:");
+        JLabel detailsLabel = new JLabel("Add details:"); // Or "Description:"
         detailsLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        JTextField detailsField = new JTextField();
+        JTextField detailsField = new JTextField(); // Assuming details/description is initially empty or fetched
         detailsField.setFont(new Font("Arial", Font.PLAIN, 14));
 
         formPanel.add(nameLabel);
@@ -297,7 +300,7 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
 
         JButton submitButton = new JButton("Submit");
         submitButton.setFont(new Font("Arial", Font.BOLD, 14));
-        submitButton.setBackground(new Color(0, 102, 102));
+        submitButton.setBackground(new Color(0, 102, 102)); // A teal color
         submitButton.setForeground(Color.WHITE);
         submitButton.setFocusPainted(false);
 
@@ -313,6 +316,8 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
 
         submitButton.addActionListener(e -> {
             String newName = nameField.getText().trim();
+            String newDetails = detailsField.getText().trim(); // Get details
+
             if (newName.isEmpty()) {
                 JOptionPane.showMessageDialog(editDialog,
                         "Name cannot be empty",
@@ -321,24 +326,47 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
                 return;
             }
 
-            // 在这里添加更新分类的逻辑
+            // Find the category to update (this is a simplified approach)
+            // In a real app, you'd have a CategoryService or manage categories in User model
+            Category categoryToUpdate = null;
+            // Assuming currentUser.getCustomCategories() or a global list exists
+            // For now, let's assume we are just showing a message.
+            // If you have a list of categories, you'd find the one matching categoryName
+            // and update its name and description.
+
+            System.out.println("Updating category '" + categoryName + "' to '" + newName + "' with details: '" + newDetails + "'");
+            // TODO: Implement actual category update logic here.
+            // This might involve:
+            // 1. Finding the Category object.
+            // 2. Calling category.setName(newName); category.setDescription(newDetails);
+            // 3. Notifying relevant parts of the application (e.g., OverviewPanel to refresh).
+
             JOptionPane.showMessageDialog(editDialog,
-                    "Category updated successfully",
+                    "Category updated successfully (simulated)",
                     "Success",
                     JOptionPane.INFORMATION_MESSAGE);
 
+            refreshOverviewData(); // Refresh to show changes if any
             editDialog.dispose();
         });
 
+        // ADDED: 自动调整对话框大小以适应内容
+        editDialog.pack();
+        // MOVED: 将 setLocationRelativeTo 移到 pack() 之后
+        editDialog.setLocationRelativeTo(this);
         editDialog.setVisible(true);
     }
+// ...
 
+
+    // OverviewPanel.java
+// ...
     private void showMonthYearChooser() {
         JDialog monthYearDialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Select Month and Year",
                 Dialog.ModalityType.APPLICATION_MODAL);
         monthYearDialog.setLayout(new BorderLayout(10, 10));
-        monthYearDialog.setSize(300, 150);
-        monthYearDialog.setLocationRelativeTo(this);
+        // REMOVED: monthYearDialog.setSize(300, 150);
+
 
         JPanel selectionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
@@ -349,18 +377,26 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
             }
         } catch (Exception ex) {
             // Keep currentChoice as YearMonth.now() if parsing fails
+
+            System.err.println("Error parsing monthLabel in showMonthYearChooser: " + ex.getMessage());
+
         }
 
         SpinnerModel yearModel = new SpinnerNumberModel(currentChoice.getYear(), 1900, 2100, 1);
         JSpinner yearSpinner = new JSpinner(yearModel);
-        yearSpinner.setEditor(new JSpinner.NumberEditor(yearSpinner, "#"));
+
+        yearSpinner.setEditor(new JSpinner.NumberEditor(yearSpinner, "#")); // Format to show no commas
 
         String[] monthNames = new DateFormatSymbols().getMonths();
+        // Ensure we only take the 12 valid month names, as getMonths() can return 13
+        // elements.
         int monthCount = 12;
         String[] displayMonthNames = new String[monthCount];
         System.arraycopy(monthNames, 0, displayMonthNames, 0, monthCount);
+
         JComboBox<String> monthComboBox = new JComboBox<>(displayMonthNames);
-        monthComboBox.setSelectedIndex(currentChoice.getMonthValue() - 1);
+        monthComboBox.setSelectedIndex(currentChoice.getMonthValue() - 1); // MonthValue is 1-12
+
 
         selectionPanel.add(new JLabel("Month:"));
         selectionPanel.add(monthComboBox);
@@ -373,12 +409,16 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
 
         okButton.addActionListener(e -> {
             int year = (Integer) yearSpinner.getValue();
-            int month = monthComboBox.getSelectedIndex() + 1;
+
+            int month = monthComboBox.getSelectedIndex() + 1; // JComboBox index is 0-11
+
             YearMonth selectedYearMonth = YearMonth.of(year, month);
             if (monthLabel != null) {
                 monthLabel.setText(selectedYearMonth.format(DateTimeFormatter.ofPattern("yyyy/MM")));
             }
-            refreshOverviewData();
+
+            refreshOverviewData(); // Refresh the overview panel with the new month/year
+
             monthYearDialog.dispose();
         });
 
@@ -389,8 +429,16 @@ public class OverviewPanel extends JPanel implements PropertyChangeListener {
 
         monthYearDialog.add(selectionPanel, BorderLayout.CENTER);
         monthYearDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+
+        // ADDED: 自动调整对话框大小以适应内容
+        monthYearDialog.pack();
+        // MOVED: 将 setLocationRelativeTo 移到 pack() 之后
+        monthYearDialog.setLocationRelativeTo(this);
+
         monthYearDialog.setVisible(true);
     }
+// ...
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
