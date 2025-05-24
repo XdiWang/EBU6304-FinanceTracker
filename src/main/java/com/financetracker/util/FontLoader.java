@@ -1,3 +1,4 @@
+
 package com.financetracker.util;
 
 import java.awt.Font;
@@ -41,7 +42,7 @@ public class FontLoader {
     private static boolean initialized = false;
 
     // 内置字体路径
-    private static final String EMBEDDED_FONT_PATH = "/fonts/simhei.ttf";
+    private static final String EMBEDDED_FONT_PATH = "/resources/fonts/simhei.ttf";
 
     /**
      * 初始化字体

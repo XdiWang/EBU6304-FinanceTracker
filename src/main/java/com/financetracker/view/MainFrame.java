@@ -1,4 +1,4 @@
-// MainFrame.java file
+// MainFrame.java
 package com.financetracker.view;
 
 import com.financetracker.model.User;
