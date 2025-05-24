@@ -1,342 +1,567 @@
 package com.financetracker.view;
 
 import com.financetracker.model.User;
+import com.financetracker.model.Transaction;
+import com.financetracker.service.TransactionService;
+import com.financetracker.util.LanguageUtil;
+import com.financetracker.view.utils.RoundedBorder;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.chart.block.BlockBorder;
+import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.title.LegendTitle;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.time.DayOfWeek;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.util.EnumMap;
+import java.awt.geom.Ellipse2D;
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.text.DateFormatSymbols;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.JSpinner;
+import javax.swing.JComboBox;
 
 /**
  * 仪表板面板 - 显示用户的月收入和支出
  */
-public class DashboardPanel extends JPanel {
+public class DashboardPanel extends JPanel implements PropertyChangeListener {
 
-    private User currentUser;
-    private JLabel welcomeLabel;
-    private JLabel dateLabel;
-    private JLabel incomeLabel;
-    private JLabel expensesLabel;
-    private JPanel recentTransactionsPanel;
-    private JPanel limitPanel;
-    private JLabel dailyLimitLabel;
-    private JLabel monthlyLimitLabel;
-    private ChartPanel chartPanel;
+        private User currentUser;
+        private TransactionService transactionService;
+        private JLabel dateLabel;
+        private JLabel incomeLabel;
+        private JLabel expensesLabel;
 
-    public DashboardPanel(User user) {
-        this.currentUser = user;
-        setupUI();
-        updateUI();
-    }
+        private ChartPanel chartPanel;
+        private DefaultCategoryDataset trendDataset;
+        private JFreeChart chart;
 
-    private void setupUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        setBackground(Color.WHITE);
+        private static final Color PANEL_BACKGROUND_COLOR = Color.WHITE;
+        private static final Color APP_BACKGROUND_COLOR = new Color(245, 245, 245);
+        private static final int CARD_ARC = 8;
+        private static final int CARD_BORDER_THICKNESS = 1;
+        private static final Color CARD_BORDER_COLOR = new Color(220, 220, 220);
+        private static final Border CARD_PADDING = new EmptyBorder(15, 15, 15, 15);
 
-        // 顶部欢迎面板
-        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
-        topPanel.setBackground(Color.WHITE);
-        welcomeLabel = new JLabel("Hi, " + (currentUser != null ? currentUser.getUsername() : "User") + "!");
-        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        // 颜色常量
+        private static final Color INCOME_TEXT_COLOR = new Color(44, 165, 141); // #2CA58D
+        private static final Color EXPENSE_TEXT_COLOR = new Color(231, 111, 81); // #E76F51
+        private static final Color CHART_OUTCOME_COLOR = new Color(137, 207, 200); // color of expense line in the chart
 
-        // 月份选择下拉框和标签
-        JPanel datePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        datePanel.setBackground(Color.WHITE);
-        dateLabel = new JLabel(YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy/MM")));
-        dateLabel.setFont(new Font("Arial", Font.BOLD, 18));
-
-        // 添加下拉箭头图标
-        JPanel dateSelectorPanel = new JPanel(new BorderLayout(5, 0));
-        dateSelectorPanel.setBackground(Color.WHITE);
-        dateSelectorPanel.add(dateLabel, BorderLayout.CENTER);
-        JLabel downArrowLabel = new JLabel("▼");
-        downArrowLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        dateSelectorPanel.add(downArrowLabel, BorderLayout.EAST);
-
-        datePanel.add(dateSelectorPanel);
-
-        topPanel.add(welcomeLabel, BorderLayout.WEST);
-        topPanel.add(datePanel, BorderLayout.EAST);
-
-        // 收入和支出面板
-        JPanel summaryPanel = new JPanel(new GridLayout(1, 2, 20, 0));
-        summaryPanel.setBackground(Color.WHITE);
-
-        // 收入面板
-        JPanel incomePanel = new JPanel(new BorderLayout());
-        incomePanel.setBackground(Color.WHITE);
-        JLabel incomeTitleLabel = new JLabel("Income", JLabel.LEFT);
-        incomeTitleLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        incomeLabel = new JLabel("+RMB 20000.00", JLabel.RIGHT);
-        incomeLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        incomeLabel.setForeground(new Color(0, 128, 0));
-        incomePanel.add(incomeTitleLabel, BorderLayout.WEST);
-        incomePanel.add(incomeLabel, BorderLayout.EAST);
-
-        // 支出面板
-        JPanel expensesPanel = new JPanel(new BorderLayout());
-        expensesPanel.setBackground(Color.WHITE);
-        JLabel expensesTitleLabel = new JLabel("Expenses", JLabel.LEFT);
-        expensesTitleLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        expensesLabel = new JLabel("-RMB 8023.67", JLabel.RIGHT);
-        expensesLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        expensesLabel.setForeground(new Color(220, 20, 60));
-        expensesPanel.add(expensesTitleLabel, BorderLayout.WEST);
-        expensesPanel.add(expensesLabel, BorderLayout.EAST);
-
-        summaryPanel.add(incomePanel);
-        summaryPanel.add(expensesPanel);
-
-        // 中央内容面板
-        JPanel centerPanel = new JPanel(new BorderLayout(20, 20));
-        centerPanel.setBackground(Color.WHITE);
-
-        // 创建趋势图表
-        JFreeChart chart = createTrendChart();
-        chartPanel = new ChartPanel(chart);
-        chartPanel.setPreferredSize(new Dimension(500, 300));
-        chartPanel.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230)));
-
-        // 右侧面板 - 包含交易记录和预算限制
-        JPanel rightPanel = new JPanel();
-        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
-        rightPanel.setBackground(Color.WHITE);
-
-        // 最近交易记录面板
-        recentTransactionsPanel = new JPanel();
-        recentTransactionsPanel.setLayout(new BoxLayout(recentTransactionsPanel, BoxLayout.Y_AXIS));
-        recentTransactionsPanel.setBackground(Color.WHITE);
-        recentTransactionsPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(230, 230, 230)),
-                "Recent Transactions",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 14)));
-
-        // 添加一些模拟交易
-        addMockTransactions();
-
-        // 预算限制面板
-        limitPanel = new JPanel(new GridLayout(3, 1, 0, 10));
-        limitPanel.setBackground(Color.WHITE);
-        limitPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(230, 230, 230)),
-                "Budget Limits",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 14)));
-
-        // 日限额
-        JPanel dailyPanel = new JPanel(new BorderLayout(10, 0));
-        dailyPanel.setBackground(Color.WHITE);
-        JLabel dailyTitleLabel = new JLabel("Daily Limits");
-        dailyTitleLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        dailyLimitLabel = new JLabel("RMB 30.00 / 100.00");
-        dailyLimitLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        JButton editDailyButton = new JButton("✎");
-        editDailyButton.setFont(new Font("Arial", Font.PLAIN, 12));
-        editDailyButton.setFocusPainted(false);
-        editDailyButton.setPreferredSize(new Dimension(20, 20));
-        dailyPanel.add(dailyTitleLabel, BorderLayout.WEST);
-        dailyPanel.add(dailyLimitLabel, BorderLayout.CENTER);
-        dailyPanel.add(editDailyButton, BorderLayout.EAST);
-
-        // 月限额
-        JPanel monthlyPanel = new JPanel(new BorderLayout(10, 0));
-        monthlyPanel.setBackground(Color.WHITE);
-        JLabel monthlyTitleLabel = new JLabel("Monthly Limits");
-        monthlyTitleLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        monthlyLimitLabel = new JLabel("RMB 8023.67 / 10000.00");
-        monthlyLimitLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-        JButton editMonthlyButton = new JButton("✎");
-        editMonthlyButton.setFont(new Font("Arial", Font.PLAIN, 12));
-        editMonthlyButton.setFocusPainted(false);
-        editMonthlyButton.setPreferredSize(new Dimension(20, 20));
-        monthlyPanel.add(monthlyTitleLabel, BorderLayout.WEST);
-        monthlyPanel.add(monthlyLimitLabel, BorderLayout.CENTER);
-        monthlyPanel.add(editMonthlyButton, BorderLayout.EAST);
-
-        // AI建议面板
-        JPanel aiAdvicePanel = new JPanel(new BorderLayout(10, 0));
-        aiAdvicePanel.setBackground(Color.WHITE);
-        JPanel aiIconPanel = new JPanel();
-        aiIconPanel.setBackground(Color.WHITE);
-        aiIconPanel.setPreferredSize(new Dimension(30, 30));
-        // 圆形图标
-        JLabel aiIconLabel = new JLabel("⚙");
-        aiIconLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        aiIconPanel.add(aiIconLabel);
-
-        JTextArea aiAdviceText = new JTextArea(
-                "This month has seen a slight overspending, please be mindful of your expenses.");
-        aiAdviceText.setEditable(false);
-        aiAdviceText.setLineWrap(true);
-        aiAdviceText.setWrapStyleWord(true);
-        aiAdviceText.setBackground(new Color(250, 250, 250));
-        aiAdviceText.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        aiAdviceText.setFont(new Font("Arial", Font.PLAIN, 12));
-
-        aiAdvicePanel.add(aiIconPanel, BorderLayout.WEST);
-        aiAdvicePanel.add(aiAdviceText, BorderLayout.CENTER);
-
-        limitPanel.add(dailyPanel);
-        limitPanel.add(monthlyPanel);
-        limitPanel.add(aiAdvicePanel);
-
-        // 将交易记录和预算面板添加到右侧面板
-        rightPanel.add(recentTransactionsPanel);
-        rightPanel.add(Box.createVerticalStrut(15));
-        rightPanel.add(limitPanel);
-
-        // 添加图表和右侧面板到中央面板
-        JPanel chartAndRightPanel = new JPanel(new GridLayout(1, 2, 20, 0));
-        chartAndRightPanel.setBackground(Color.WHITE);
-        chartAndRightPanel.add(chartPanel);
-        chartAndRightPanel.add(rightPanel);
-        centerPanel.add(chartAndRightPanel, BorderLayout.CENTER);
-
-        // 添加所有面板到仪表板
-        add(topPanel, BorderLayout.NORTH);
-        add(centerPanel, BorderLayout.CENTER);
-        add(summaryPanel, BorderLayout.SOUTH);
-    }
-
-    private JFreeChart createTrendChart() {
-        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-
-        // 模拟数据：最近一周的收入和支出
-        String[] days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
-        double[] incomeData = { 430, 450, 420, 370, 500, 280, 270 };
-        double[] outcomeData = { 100, 80, 90, 150, 120, 170, 350 };
-
-        for (int i = 0; i < days.length; i++) {
-            dataset.addValue(incomeData[i], "Income", days[i]);
-            dataset.addValue(outcomeData[i], "Outcome", days[i]);
+        public DashboardPanel(User user, TransactionService transactionService) {
+                this.currentUser = user;
+                this.transactionService = transactionService;
+                this.transactionService.addPropertyChangeListener(this);
+                setupMainLayout();
+                refreshDashboardData();
         }
 
-        // 创建折线图
-        JFreeChart chart = ChartFactory.createLineChart(
-                "", // 图表标题
-                "Date", // x轴标签
-                "Amount (¥)", // y轴标签
-                dataset, // 数据集
-                PlotOrientation.VERTICAL, // 图表方向
-                true, // 是否包含图例
-                true, // 是否生成工具提示
-                false // 是否生成URL链接
-        );
+        private void setupMainLayout() {
+                setLayout(new BorderLayout(0, 15));
+                setBorder(new EmptyBorder(20, 20, 20, 20));
+                setBackground(APP_BACKGROUND_COLOR);
 
-        // 自定义图表样式 - 改进以匹配上传的图片样式
-        chart.setBackgroundPaint(Color.WHITE);
-        CategoryPlot plot = chart.getCategoryPlot();
-        plot.setBackgroundPaint(Color.WHITE);
-        plot.setDomainGridlinePaint(new Color(220, 220, 220));
-        plot.setRangeGridlinePaint(new Color(220, 220, 220));
+                add(createGreetingPanel(), BorderLayout.NORTH);
 
-        // 设置图例
-        chart.getLegend().setFrame(BlockBorder.NONE);
-        chart.getLegend().setBackgroundPaint(Color.WHITE);
+                // 只保留左侧图表部分
+                JPanel cardPanel = createCardPanel();
+                cardPanel.setLayout(new BorderLayout(10, 10));
 
-        // 自定义线条样式
-        LineAndShapeRenderer renderer = (LineAndShapeRenderer) plot.getRenderer();
+                // 保留月份显示和收入/支出汇总
+                JPanel summaryDisplayPanel = createSummaryDisplayPanel();
+                cardPanel.add(summaryDisplayPanel, BorderLayout.NORTH);
 
-        // 收入线条 - 深绿色系
-        renderer.setSeriesPaint(0, new Color(0, 86, 91));
-        renderer.setSeriesStroke(0, new BasicStroke(2.5f));
-        renderer.setSeriesShapesVisible(0, true);
+                // 图表初始化
+                initChartPanel();
+                cardPanel.add(chartPanel, BorderLayout.CENTER);
 
-        // 支出线条 - 浅绿色系
-        renderer.setSeriesPaint(1, new Color(105, 190, 171));
-        renderer.setSeriesStroke(1, new BasicStroke(2.5f));
-        renderer.setSeriesShapesVisible(1, true);
-
-        // 轴线设置
-        CategoryAxis domainAxis = plot.getDomainAxis();
-        domainAxis.setTickLabelFont(new Font("Arial", Font.PLAIN, 12));
-
-        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-        rangeAxis.setTickLabelFont(new Font("Arial", Font.PLAIN, 12));
-        rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
-
-        return chart;
-    }
-
-    private void addMockTransactions() {
-        // 模拟交易数据 - 使用图标和更现代的布局
-        addTransactionItem("Clothing", "-RMB 600.00", new Color(255, 99, 71));
-        addTransactionItem("Railway", "-RMB 1200.00", new Color(106, 90, 205));
-        addTransactionItem("Salary", "+RMB 20000.00", new Color(50, 205, 50));
-        addTransactionItem("Apple", "-RMB 4000.00", new Color(255, 165, 0));
-        addTransactionItem("Transfer", "-RMB 1000.00", new Color(30, 144, 255));
-    }
-
-    private void addTransactionItem(String name, String amount, Color iconColor) {
-        JPanel transactionPanel = new JPanel(new BorderLayout(10, 0));
-        transactionPanel.setBackground(Color.WHITE);
-        transactionPanel.setBorder(BorderFactory.createEmptyBorder(8, 5, 8, 5));
-
-        // 创建圆形图标
-        JPanel iconPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                g.setColor(iconColor);
-                g.fillOval(0, 0, getWidth(), getHeight());
-            }
-        };
-        iconPanel.setPreferredSize(new Dimension(24, 24));
-        iconPanel.setOpaque(false);
-
-        // 交易名称
-        JLabel nameLabel = new JLabel(name);
-        nameLabel.setFont(new Font("Arial", Font.PLAIN, 14));
-
-        // 交易金额
-        JLabel amountLabel = new JLabel(amount);
-        amountLabel.setFont(new Font("Arial", Font.BOLD, 14));
-
-        if (amount.startsWith("+")) {
-            amountLabel.setForeground(new Color(0, 128, 0));
-        } else {
-            amountLabel.setForeground(new Color(220, 20, 60));
+                // 添加到主面板
+                add(cardPanel, BorderLayout.CENTER);
         }
 
-        // 添加到交易面板
-        transactionPanel.add(iconPanel, BorderLayout.WEST);
-        transactionPanel.add(nameLabel, BorderLayout.CENTER);
-        transactionPanel.add(amountLabel, BorderLayout.EAST);
+        private JPanel createCardPanel() {
+                JPanel card = new JPanel();
+                card.setBackground(PANEL_BACKGROUND_COLOR);
+                card.setBorder(BorderFactory.createCompoundBorder(
+                                new RoundedBorder(CARD_BORDER_COLOR, CARD_ARC, CARD_BORDER_THICKNESS),
+                                CARD_PADDING));
+                return card;
+        }
 
-        // 添加分隔线
-        JSeparator separator = new JSeparator(JSeparator.HORIZONTAL);
-        separator.setForeground(new Color(230, 230, 230));
+        private JPanel createSummaryDisplayPanel() {
+                JPanel summaryPanel = new JPanel(new BorderLayout(0, 20));
+                summaryPanel.setOpaque(false);
 
-        // 创建包含交易项和分隔线的面板
-        JPanel itemWithSeparator = new JPanel(new BorderLayout());
-        itemWithSeparator.setBackground(Color.WHITE);
-        itemWithSeparator.add(transactionPanel, BorderLayout.CENTER);
-        itemWithSeparator.add(separator, BorderLayout.SOUTH);
+                // 日期选择器面板 (居中显示)
+                JPanel dateSelectorPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+                dateSelectorPanel.setOpaque(false);
+                dateLabel = new JLabel(YearMonth.now().format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                dateLabel.setFont(new Font("Arial", Font.BOLD, 22));
+                dateLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        recentTransactionsPanel.add(itemWithSeparator);
-    }
+                JLabel downArrowLabel = new JLabel(" ▼");
+                downArrowLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+                downArrowLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-    /**
-     * 更新UI显示
-     */
-    public void updateUI() {
-        // 实际应用中，这里会根据用户数据更新UI
-        // 当前使用的是模拟数据
-    }
+                // 为日期标签和箭头添加月份选择功能
+                MouseAdapter monthSelectorMouseAdapter = new MouseAdapter() {
+                        @Override
+                        public void mouseClicked(MouseEvent e) {
+                                showMonthYearChooser();
+                        }
+                };
+                dateLabel.addMouseListener(monthSelectorMouseAdapter);
+                downArrowLabel.addMouseListener(monthSelectorMouseAdapter);
+
+                dateSelectorPanel.add(dateLabel);
+                dateSelectorPanel.add(downArrowLabel);
+                summaryPanel.add(dateSelectorPanel, BorderLayout.NORTH);
+
+                // 收入和支出面板 (水平排列)
+                JPanel incomeExpensesPanel = new JPanel();
+                incomeExpensesPanel.setLayout(new GridLayout(1, 2, 40, 0));
+                incomeExpensesPanel.setOpaque(false);
+                incomeExpensesPanel.setBorder(new EmptyBorder(15, 30, 15, 30));
+
+                // 收入部分
+                JPanel incomeSection = new JPanel();
+                incomeSection.setLayout(new BoxLayout(incomeSection, BoxLayout.Y_AXIS));
+                incomeSection.setOpaque(false);
+                incomeSection.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
+
+                JLabel incomeTitleLabel = new JLabel(LanguageUtil.getText("dashboard.income"));
+                incomeTitleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                incomeTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                incomeLabel = new JLabel("+RMB 0.00");
+                incomeLabel.setFont(new Font("Arial", Font.BOLD, 22));
+                incomeLabel.setForeground(INCOME_TEXT_COLOR);
+                incomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                incomeSection.add(Box.createVerticalGlue());
+                incomeSection.add(incomeTitleLabel);
+                incomeSection.add(Box.createVerticalStrut(10));
+                incomeSection.add(incomeLabel);
+                incomeSection.add(Box.createVerticalGlue());
+
+                // 支出部分
+                JPanel expenseSection = new JPanel();
+                expenseSection.setLayout(new BoxLayout(expenseSection, BoxLayout.Y_AXIS));
+                expenseSection.setOpaque(false);
+
+                JLabel expenseTitleLabel = new JLabel(LanguageUtil.getText("dashboard.expenses"));
+                expenseTitleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+                expenseTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                expensesLabel = new JLabel("-RMB 0.00");
+                expensesLabel.setFont(new Font("Arial", Font.BOLD, 22));
+                expensesLabel.setForeground(EXPENSE_TEXT_COLOR);
+                expensesLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                expenseSection.add(Box.createVerticalGlue());
+                expenseSection.add(expenseTitleLabel);
+                expenseSection.add(Box.createVerticalStrut(10));
+                expenseSection.add(expensesLabel);
+                expenseSection.add(Box.createVerticalGlue());
+
+                incomeExpensesPanel.add(incomeSection);
+                incomeExpensesPanel.add(expenseSection);
+
+                // 创建一个带有边框的面板来包裹收入和支出
+                JPanel borderedPanel = new JPanel(new BorderLayout());
+                borderedPanel.setOpaque(false);
+                borderedPanel.setBorder(new RoundedBorder(new Color(240, 240, 240), 10, 1));
+                borderedPanel.add(incomeExpensesPanel, BorderLayout.CENTER);
+
+                summaryPanel.add(borderedPanel, BorderLayout.CENTER);
+
+                return summaryPanel;
+        }
+
+        private void initChartPanel() {
+                // 创建数据集
+                trendDataset = new DefaultCategoryDataset();
+
+                // 创建图表
+                chart = ChartFactory.createLineChart(
+                                null, // chart title
+                                "Date", // X-axis label
+                                "Amount (RMB)", // Y-axis label 
+                                trendDataset, // dataset
+                                PlotOrientation.VERTICAL, // chart diretion
+                                true, // 是否显示图例
+                                true, // 是否使用工具提示
+                                false // 是否使用URL链接
+                );
+
+                // 设置图表样式
+                chart.setBackgroundPaint(Color.WHITE);
+
+                // 获取绘图区域
+                CategoryPlot plot = (CategoryPlot) chart.getPlot();
+                plot.setBackgroundPaint(Color.WHITE);
+                plot.setDomainGridlinePaint(new Color(240, 240, 240));
+                plot.setRangeGridlinePaint(new Color(240, 240, 240));
+                plot.setOutlineVisible(false);
+                plot.setDomainGridlinesVisible(true);
+                plot.setRangeGridlinesVisible(true);
+
+                // 自定义收入和支出的线条样式
+                LineAndShapeRenderer renderer = (LineAndShapeRenderer) plot.getRenderer();
+
+                // 收入线样式 - 使用绿色，增大线条粗细
+                renderer.setSeriesPaint(0, new Color(44, 165, 141));
+                renderer.setSeriesStroke(0, new BasicStroke(3.0f));
+                renderer.setSeriesShapesVisible(0, true);
+                renderer.setSeriesShape(0, new Ellipse2D.Double(-5, -5, 10, 10));
+                renderer.setSeriesFillPaint(0, Color.WHITE);
+                renderer.setUseFillPaint(true);
+
+                // 支出线样式 - 使用红色，增大线条粗细
+                renderer.setSeriesPaint(1, new Color(231, 76, 60));
+                renderer.setSeriesStroke(1, new BasicStroke(3.0f));
+                renderer.setSeriesShapesVisible(1, true);
+                renderer.setSeriesShape(1, new Ellipse2D.Double(-5, -5, 10, 10));
+                renderer.setSeriesFillPaint(1, Color.WHITE);
+
+                // 设置X轴样式
+                CategoryAxis domainAxis = plot.getDomainAxis();
+                domainAxis.setLowerMargin(0.02);
+                domainAxis.setUpperMargin(0.02);
+                domainAxis.setTickLabelFont(new Font("Arial", Font.PLAIN, 13));
+
+                // 设置Y轴样式
+                NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+                rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+                rangeAxis.setTickLabelFont(new Font("Arial", Font.PLAIN, 13));
+                rangeAxis.setNumberFormatOverride(new DecimalFormat("¥#,##0"));
+                rangeAxis.setLowerMargin(0.05);
+                rangeAxis.setUpperMargin(0.05);
+
+                // 设置图例样式
+                LegendTitle legend = chart.getLegend();
+                if (legend != null) {
+                        legend.setPosition(RectangleEdge.TOP);
+                        legend.setFrame(BlockBorder.NONE);
+                        legend.setItemFont(new Font("Arial", Font.BOLD, 14));
+                }
+
+                // 创建图表面板 - 增大面板尺寸
+                chartPanel = new ChartPanel(chart);
+                chartPanel.setPreferredSize(new Dimension(800, 400));
+                chartPanel.setBorder(new EmptyBorder(20, 10, 10, 10));
+                chartPanel.setMouseWheelEnabled(true);
+                chartPanel.setBackground(Color.WHITE);
+                chartPanel.setFillZoomRectangle(false);
+                chartPanel.setMouseZoomable(true, false);
+        }
+
+        private void refreshDashboardData() {
+                if (transactionService == null) {
+                        return;
+                }
+
+                YearMonth monthToDisplay;
+                // 优先使用dateLabel中用户选择或程序设置的月份
+                try {
+                        if (dateLabel != null && dateLabel.getText() != null && !dateLabel.getText().isEmpty()) {
+                                monthToDisplay = YearMonth.parse(dateLabel.getText(),
+                                                DateTimeFormatter.ofPattern("yyyy/MM"));
+                        } else {
+                                // 如果dateLabel为空，则尝试获取最新交易的月份
+                                List<Transaction> allTransactionsForMonthCheck = transactionService.getTransactions();
+                                if (allTransactionsForMonthCheck.isEmpty()) {
+                                        monthToDisplay = YearMonth.now();
+                                } else {
+                                        LocalDate latestTransactionDate = allTransactionsForMonthCheck.stream()
+                                                        .map(Transaction::getDate)
+                                                        .max(LocalDate::compareTo)
+                                                        .orElse(LocalDate.now());
+                                        monthToDisplay = YearMonth.from(latestTransactionDate);
+                                }
+                                // 确保dateLabel也更新
+                                if (dateLabel != null) {
+                                        dateLabel.setText(
+                                                        monthToDisplay.format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                                }
+                        }
+                } catch (Exception e) {
+                        System.err.println("DashboardPanel: Error parsing month from dateLabel, attempting fallback: "
+                                        + e.getMessage());
+                        // 解析失败时的回退逻辑：显示最新交易的月份或当前月份
+                        List<Transaction> allTransactionsForFallback = transactionService.getTransactions();
+                        if (allTransactionsForFallback.isEmpty()) {
+                                monthToDisplay = YearMonth.now();
+                        } else {
+                                LocalDate latestTransactionDate = allTransactionsForFallback.stream()
+                                                .map(Transaction::getDate)
+                                                .max(LocalDate::compareTo)
+                                                .orElse(LocalDate.now());
+                                monthToDisplay = YearMonth.from(latestTransactionDate);
+                        }
+                        // 确保dateLabel也更新
+                        if (dateLabel != null) {
+                                dateLabel.setText(monthToDisplay.format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                        }
+                }
+
+                final YearMonth currentDisplayMonth = monthToDisplay;
+                List<Transaction> allTransactions = transactionService.getTransactions(); // 获取所有交易以进行筛选
+
+                double totalIncome = 0;
+                double totalExpenses = 0;
+
+                // 收集当前显示月份的交易
+                List<Transaction> monthlyTransactions = allTransactions.stream()
+                                .filter(t -> YearMonth.from(t.getDate()).equals(currentDisplayMonth))
+                                .collect(Collectors.toList());
+
+                // 计算总收入和支出
+                for (Transaction t : monthlyTransactions) {
+                        if (t.getType() == Transaction.TransactionType.INCOME) {
+                                totalIncome += t.getAmount();
+                        } else {
+                                totalExpenses += t.getAmount();
+                        }
+                }
+
+                // 更新收入和支出标签
+                DecimalFormat df = new DecimalFormat("#,##0.00");
+                if (incomeLabel != null) {
+                        incomeLabel.setText(String.format("+RMB %s", df.format(totalIncome)));
+                }
+                if (expensesLabel != null) {
+                        expensesLabel.setText(String.format("-RMB %s", df.format(Math.abs(totalExpenses))));
+                }
+
+                // 更新图表数据
+                updateChartData(monthlyTransactions, currentDisplayMonth);
+        }
+
+        /**
+         * 更新图表数据，X轴显示日期 (dd)
+         */
+        private void updateChartData(List<Transaction> monthlyTransactions, YearMonth currentMonth) {
+                trendDataset.clear();
+
+                Map<LocalDate, Double> incomeByDate = new HashMap<>();
+                Map<LocalDate, Double> expenseByDate = new HashMap<>();
+
+                // 按日期聚合交易数据
+                for (Transaction t : monthlyTransactions) {
+                        LocalDate date = t.getDate();
+                        if (t.getType() == Transaction.TransactionType.INCOME) {
+                                incomeByDate.merge(date, t.getAmount(), Double::sum);
+                        } else {
+                                expenseByDate.merge(date, Math.abs(t.getAmount()), Double::sum);
+                        }
+                }
+
+                String incomeSeriesKey = LanguageUtil.getText("dashboard.chart.series.income");
+                String expenseSeriesKey = LanguageUtil.getText("dashboard.chart.series.outcome");
+                DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("dd");
+
+                // 获取月份中的所有日期，并确保它们已排序
+                List<LocalDate> datesInMonth = monthlyTransactions.stream()
+                                .map(Transaction::getDate)
+                                .distinct()
+                                .sorted()
+                                .collect(Collectors.toList());
+
+                // 如果当月没有交易，但仍希望显示X轴（例如从1到月底），则需要额外逻辑
+                // 目前，仅为有交易的日期创建数据点
+                if (datesInMonth.isEmpty() && !monthlyTransactions.isEmpty()) {
+                        // 这个情况理论上不应该发生，如果 monthlyTransactions 非空，datesInMonth 也应该非空
+                        // 但作为防御性编程，可以处理
+                } else if (datesInMonth.isEmpty() && monthlyTransactions.isEmpty()) {
+                        // 如果整个月都没有交易，可以显示一个空图表或特定消息
+                        // 为了简单起见，这里将显示一个空的X轴和0值
+                        // 例如，可以尝试显示月份中的每一天
+                        int daysInMonth = currentMonth.lengthOfMonth();
+                        for (int i = 1; i <= daysInMonth; i++) {
+                                String dayOfMonthStr = String.format("%02d", i);
+                                trendDataset.addValue(0.0, incomeSeriesKey, dayOfMonthStr);
+                                trendDataset.addValue(0.0, expenseSeriesKey, dayOfMonthStr);
+                        }
+                } else {
+                        for (LocalDate date : datesInMonth) {
+                                String dayOfMonthStr = date.format(dayFormatter);
+                                trendDataset.addValue(incomeByDate.getOrDefault(date, 0.0), incomeSeriesKey,
+                                                dayOfMonthStr);
+                                trendDataset.addValue(expenseByDate.getOrDefault(date, 0.0), expenseSeriesKey,
+                                                dayOfMonthStr);
+                        }
+                }
+        }
+
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+                if ("transactionsChanged".equals(evt.getPropertyName())) {
+                        // 当交易数据发生变化时 (例如CSV导入或手动添加)
+                        // 1. 确定应该显示的月份 (通常是最新交易的月份)
+                        // 需要确保 transactionService 不是 null，尽管通常 propertyChange 被触发时它应该是有效的
+                        if (transactionService == null)
+                                return;
+                        List<Transaction> allTransactions = transactionService.getTransactions();
+                        YearMonth monthToSet;
+                        if (allTransactions.isEmpty()) {
+                                monthToSet = YearMonth.now(); // 如果没有交易，则为当前月
+                        } else {
+                                LocalDate latestTransactionDate = allTransactions.stream()
+                                                .map(Transaction::getDate)
+                                                .max(LocalDate::compareTo)
+                                                .orElse(LocalDate.now());
+                                monthToSet = YearMonth.from(latestTransactionDate);
+                        }
+
+                        // 2. 更新dateLabel以反映这个月份
+                        // 确保在UI线程中更新UI组件
+                        SwingUtilities.invokeLater(() -> {
+                                if (dateLabel != null) {
+                                        dateLabel.setText(monthToSet.format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                                }
+                                // 3. 刷新仪表板数据，refreshDashboardData会读取dateLabel的值
+                                refreshDashboardData();
+                        });
+
+                } else if ("userSettingsChanged".equals(evt.getPropertyName())) {
+                        // 用户设置更改可能影响语言等，也需要刷新
+                        // 确保在UI线程中更新UI组件
+                        SwingUtilities.invokeLater(this::refreshDashboardData);
+                }
+        }
+
+        private JPanel createGreetingPanel() {
+                JPanel greetingPanel = new JPanel(new BorderLayout());
+                greetingPanel.setOpaque(false);
+                greetingPanel.setBorder(new EmptyBorder(0, 5, 15, 0));
+
+                // 左侧欢迎信息
+                JPanel leftPanel = new JPanel(new GridLayout(2, 1, 0, 5));
+                leftPanel.setOpaque(false);
+
+                String userName = (currentUser != null && currentUser.getUsername() != null
+                                && !currentUser.getUsername().isEmpty())
+                                                ? currentUser.getUsername()
+                                                : "User";
+                JLabel greetingLabel = new JLabel("Hi, " + userName + "!");
+                greetingLabel.setFont(new Font("Arial", Font.BOLD, 28));
+                greetingLabel.setForeground(Color.BLACK);
+
+                // 添加当前日期显示
+                JLabel dateInfoLabel = new JLabel(LocalDate.now().format(
+                                DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", Locale.ENGLISH)));
+                dateInfoLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+                dateInfoLabel.setForeground(new Color(100, 100, 100));
+
+                leftPanel.add(greetingLabel);
+                leftPanel.add(dateInfoLabel);
+
+                // 添加到主面板
+                greetingPanel.add(leftPanel, BorderLayout.WEST);
+
+                return greetingPanel;
+        }
+
+        // DashboardPanel.java
+// ...
+        private void showMonthYearChooser() {
+                // 创建一个简单的月份年份选择对话框
+                JDialog monthYearDialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Select Month and Year",
+                        Dialog.ModalityType.APPLICATION_MODAL);
+                monthYearDialog.setLayout(new BorderLayout(10, 10));
+                // REMOVED: monthYearDialog.setSize(300, 150);
+
+                JPanel selectionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+
+                YearMonth currentChoice = YearMonth.now(); // Default to current month
+                try {
+                        // Attempt to parse the current dateLabel text to pre-fill the chooser
+                        if (dateLabel != null && dateLabel.getText() != null && !dateLabel.getText().isEmpty()) {
+                                currentChoice = YearMonth.parse(dateLabel.getText(), DateTimeFormatter.ofPattern("yyyy/MM"));
+                        }
+                } catch (Exception ex) {
+                        // If parsing fails, currentChoice remains YearMonth.now()
+                        System.err.println("Error parsing dateLabel in showMonthYearChooser: " + ex.getMessage());
+                }
+
+
+                // 年份选择
+                SpinnerModel yearModel = new SpinnerNumberModel(currentChoice.getYear(), 1900, 2100, 1);
+                JSpinner yearSpinner = new JSpinner(yearModel);
+                yearSpinner.setEditor(new JSpinner.NumberEditor(yearSpinner, "#")); // Format to show no commas
+
+                // 月份选择 (1-12)
+                String[] monthNames = new DateFormatSymbols().getMonths();
+                // DateFormatSymbols().getMonths() returns an array of 13 strings (index 12 is empty).
+                // We only need the first 12.
+                int monthCount = 12;
+                String[] displayMonthNames = new String[monthCount];
+                System.arraycopy(monthNames, 0, displayMonthNames, 0, monthCount);
+
+                JComboBox<String> monthComboBox = new JComboBox<>(displayMonthNames);
+                monthComboBox.setSelectedIndex(currentChoice.getMonthValue() - 1); // MonthValue is 1-12, JComboBox index 0-11
+
+                selectionPanel.add(new JLabel("Month:"));
+                selectionPanel.add(monthComboBox);
+                selectionPanel.add(new JLabel("Year:"));
+                selectionPanel.add(yearSpinner);
+
+                JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+                JButton okButton = new JButton("OK");
+                JButton cancelButton = new JButton("Cancel");
+
+                okButton.addActionListener(e -> {
+                        int year = (Integer) yearSpinner.getValue();
+                        int month = monthComboBox.getSelectedIndex() + 1; // JComboBox索引从0开始
+                        YearMonth selectedYearMonth = YearMonth.of(year, month);
+                        if (dateLabel != null) {
+                                dateLabel.setText(selectedYearMonth.format(DateTimeFormatter.ofPattern("yyyy/MM")));
+                        }
+                        refreshDashboardData(); // 使用新的月份刷新数据
+                        monthYearDialog.dispose();
+                });
+
+                cancelButton.addActionListener(e -> monthYearDialog.dispose());
+
+                buttonPanel.add(okButton);
+                buttonPanel.add(cancelButton);
+
+                monthYearDialog.add(selectionPanel, BorderLayout.CENTER);
+                monthYearDialog.add(buttonPanel, BorderLayout.SOUTH);
+
+                // ADDED: 自动调整对话框大小以适应内容
+                monthYearDialog.pack();
+                // MOVED: 将 setLocationRelativeTo 移到 pack() 之后
+                monthYearDialog.setLocationRelativeTo(this);
+                monthYearDialog.setVisible(true);
+        }
+// ...
+
 }
