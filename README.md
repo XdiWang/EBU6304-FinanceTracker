@@ -1,318 +1,126 @@
-# AI-Powered Personal Finance Tracker
+# AI-Empowered Personal Finance Tracker
 
-An intelligent personal finance management application developed with Java Swing, integrating AI technology to provide spending analysis and financial advice.
+This is a Java Swing-based desktop application designed to help users track their personal finances, featuring AI-assisted financial advice.
 
-## Features
+## Key Features
 
-### 1. Multi-language Support (Partially Implemented)
-- Chinese and English interface support
-- Language switching in login, registration, and main interface
-- User language preference settings
-- Internationalization support for all UI text (ongoing improvement)
+*   **User Management**: Supports user registration and login with hashed password security.
+*   **Account Management**: Add, edit, and delete various types of financial accounts (e.g., bank accounts, Alipay, WeChat Pay).
+*   **Transaction Logging**: Record income and expense transactions, linking them to specific accounts and categories.
+*   **Category Management**: Built-in common transaction categories and support for user-defined categories.
+*   **Data Visualization**:
+    *   **Dashboard**: Displays monthly income/expense summaries and a daily income/expense trend chart.
+    *   **Overview**: Shows categorized monthly expenses with a pie chart illustrating spending structure.
+*   **AI Financial Assistant**:
+    *   Automatic transaction categorization via local keyword matching (simulated AI).
+    *   Provides saving suggestions, monthly expense predictions, and budget allocation advice (simulated AI).
+    *   Integrates with **DeepSeek API** for advanced AI-powered financial chat consultations.
+*   **Data Import/Export**: Supports importing transaction data from CSV files and exporting data to CSV or PDF formats.
+*   **Multi-language Support**: Switch between Chinese and English interfaces.
+*   **Font Optimization**: Includes an embedded Chinese font (`simhei.ttf`) to ensure proper display on various systems.
 
-### 2. User Authentication and Security
-- User registration with username, password, email, and phone number validation
-- Email format validation
-- Phone number format validation (Chinese mobile numbers)
-- Secure password storage
-- Two-factor authentication (2FA)
-- Secure logout functionality
+## Prerequisites
 
-### 3. Account Management
-- Multiple account types: bank accounts, Alipay, WeChat Pay, cash, and others
-- Account creation, editing, and deletion
-- Automatic balance calculation and updates
-- Detailed account information and transaction history
-- Currency symbol display (¥)
+*   **JDK**: Version 11 or higher.
+*   **IDE**: IntelliJ IDEA (Recommended).
+*   **Maven**: Version 3.6.x or higher (often bundled with IntelliJ IDEA).
+*   **Internet Connection**: Required for Maven to download dependencies and for the DeepSeek API functionality.
 
-### 4. Transaction Records
-- Income and expense tracking
-- Custom transaction categories
-- Transaction creation, editing, and deletion
-- Transaction description and amount recording
-- Unique transaction ID generation
-- Transaction date management
+## IntelliJ IDEA Project Setup (with Maven)
 
-### 5. Data Visualization and Analysis (Style Improvements Ongoing)
-- Dashboard overview with financial summary
-- Income and expense ratio analysis
-- Category-based expense analysis
-- Financial trend charts
-- Monthly income-expense comparison
-- Expense category pie charts
-- Transaction history timeline
-- Monthly data selection in overview panel
-- Decoupled dashboard and overview panel
+1.  **Obtain Project Code**:
+    *   If the project uses Git, clone the repository.
+    *   Otherwise, extract the project code to a local folder.
 
-### 6. AI Assistant Features (Core Implementation Complete)
-- AI service selection (e.g., DeepSeek)
-- Intelligent dialogue and financial advice
-- Chat interface with:
-  * Clear title bar
-  * Distinct message bubbles
-  * User and AI avatars
-  * Timestamps
-  * Dynamic message width
-  * Auto-scrolling chat history
-  * Input box with enter-to-send
-- DeepSeek AI API integration
-- Streaming output with typing effect
-- Transaction data context for personalized advice
-- Quick response options
-- In-memory chat history
-- Error handling for API calls
+2.  **Open Project in IntelliJ IDEA**:
+    *   Launch IntelliJ IDEA.
+    *   Select `File` -> `Open...` (or `Open Project...`).
+    *   Navigate to the project's root directory (the one containing the `pom.xml` file) and select it.
+    *   IntelliJ IDEA should automatically detect it as a Maven project. If prompted, choose "Open as Project" and trust the project.
 
-### 7. Data Import/Export
-- CSV format import/export
-- Data backup and recovery
+3.  **Configure JDK**:
+    *   Go to `File` -> `Project Structure...`.
+    *   Under `Project Settings` -> `Project`, ensure a compatible JDK (11+) is selected for `SDK`.
+    *   If no suitable JDK is listed, you can add one under `Platform Settings` -> `SDKs` by clicking `+`.
 
-### 8. Budget Management
-- Monthly and daily budget limits
-- Budget usage visualization
-- Budget overspending warnings
-- Category-based budget limits
+4.  **Maven Dependencies**:
+    *   Maven will automatically download and manage the project dependencies defined in the `pom.xml` file.
+    *   If dependencies are not resolved automatically, or if you modify `pom.xml`, you can force a re-import:
+        *   Open the `Maven` tool window (usually on the right side of IDEA).
+        *   Click the `Reload All Maven Projects` button (often a circular arrows icon).
+    *   The key dependencies include: JFreeChart, Apache Commons CSV, Apache PDFBox, and Jackson libraries. These are specified in your `pom.xml`.
 
-### 9. Automatic Categorization
-- Description-based automatic categorization
-- Smart transaction type recognition
-- Anomaly detection
-- Seasonal spending pattern recognition
+5.  **Configure Resource Folders**:
+    *   For a standard Maven project, resources like fonts and images should be placed in `src/main/resources`.
+    *   IntelliJ IDEA usually marks `src/main/resources` as a "Resources Root" automatically for Maven projects.
+    *   The application expects the font at `/resources/fonts/simhei.ttf` and images like `/resources/images/user.png` relative to the classpath root. Ensure your `src/main/resources` directory contains `fonts/simhei.ttf` and `images/user.png` etc.
 
-### 10. User Interface and Experience (Continuous Optimization)
-- Modern UI with FlatLaf
-- Responsive layout
-- Adaptive font sizes
-- Chinese character support
-- Tooltips and help text
-- Dynamic theme switching
-- Customizable interface elements
-- Optimized UI spacing and alignment
+## Configuration
 
-### 11. Reporting Features
-- Monthly financial reports
-- Annual consumption summary
-- Custom period reports
-- Category analysis reports
-- Savings rate calculation
+1.  **DeepSeek API Key**:
+    *   To use the integrated DeepSeek AI chat feature, a valid API key is required.
+    *   Open the file: `src/main/java/com/financetracker/service/DeepSeekAPIService.java`
+    *   Locate the line:
+        ```java
+        private static final String API_KEY = "sk-a504d43d17754171bc4aecbc6a4e0dd2"; // Replace with your API key
+        ```
+    *   Replace `"sk-a504d43d17754171bc4aecbc6a4e0dd2"` with your actual DeepSeek API key.
+    *   **Note**: If this key is not configured or is invalid, the DeepSeek AI chat feature will not work correctly and may fall back to the local simulated AI.
 
-### 12. System Features
-- Multi-platform support (Windows, macOS, Linux)
-- Automatic Chinese font loading
-- Advanced logging
-- Command-line parameter support
-- Automatic font detection and replacement
-- UTF-8 encoding support
+2.  **Fonts**:
+    *   The application includes `simhei.ttf` (a Chinese HeiTi font) in `src/main/resources/fonts/` to improve Chinese character display.
+    *   `FontLoader.java` attempts to load this embedded font if the system lacks suitable Chinese fonts.
 
-## Technology Stack
+3.  **Language**:
+    *   The application supports Chinese and English. The default language can be seen in `LanguageUtil.java`. User preferences are applied after login.
+    *   Language switching is available in the menu bar on the login screen and the main application window.
 
-- Java Swing: Building the user interface
-- JFreeChart: Data visualization
-- Apache Commons CSV: Processing CSV files
-- Jackson: Processing JSON data
-- DeepLearning4j: AI functionality support
-- JUnit: Unit testing framework
+## Running the Application
 
-## System Architecture
+1.  **Locate the Main Class**: In the IntelliJ IDEA Project view, navigate to `src/main/java` -> `com.financetracker` -> `FinanceTrackerApp.java`.
+2.  **Run**:
+    *   Right-click on the `FinanceTrackerApp.java` file.
+    *   Select `Run 'FinanceTrackerApp.main()'`.
+3.  **Login**:
+    *   The application will start with a login screen.
+    *   A default test account is available:
+        *   **Username**: `test`
+        *   **Password**: `password`
+    *   You can also register a new user.
 
-Designed using MVC (Model-View-Controller) architecture:
+## Usage Guide
 
-- **Model Layer**: Contains core data models for users, accounts, transactions, and categories
-- **View Layer**: Includes login interface, main window, dashboard, account management, and AI chat interface
-- **Controller Layer**: Handles user authentication and business logic
+*   **Navigation**: Switch between different modules (Dashboard, Overview, Account, AI Chat) using the menu bar or the toolbar buttons at the top of the main window.
+*   **Dashboard**: View summaries of income, expenses, and trend charts. Select different months by clicking on the displayed date.
+*   **Overview**: See a pie chart of expenses by category and a detailed list. Select different months by clicking on the displayed date.
+*   **Account Panel**: Manage your financial accounts, and add/delete transactions.
+    *   Select an account to view its balance and transaction history.
+    *   Add income or expense transactions.
+    *   Delete selected transactions.
+    *   Add, edit, or delete accounts.
+*   **AI Chat Panel**: Interact with the AI financial assistant.
+    *   Choose to use DeepSeek AI (if the API key is configured) or the local simulated AI.
+    *   Type your questions or use the quick option buttons.
+*   **Data Import/Export**:
+    *   **Import**: Use the `File` -> `Import CSV` menu to import transaction data. You will be prompted to select an account to associate the imported transactions with. The CSV file should typically have columns like: `Date,Type,Description,Amount,Category`. (Date format: `yyyy-MM-dd`).
+    *   **Export**: Use the `File` -> `Export Data` menu to export all transaction data to a CSV or PDF file.
+*   **Language Switching**: Change the interface language via the `Language` menu in the menu bar.
 
-## System Requirements
+## Troubleshooting
 
-- Java 11 or higher
-- Recommended screen resolution: 1280x720 or higher
+*   **Chinese Characters Display as Squares or Gibberish**:
+    *   Ensure the `simhei.ttf` font file is correctly located in `src/main/resources/fonts/`.
+    *   `FontLoader.java` is designed to address this. You can run `FontTester.java` (in `com.financetracker.util`) to diagnose font issues.
+*   **AI Chat (DeepSeek) Not Working**:
+    *   Verify that the `API_KEY` in `DeepSeekAPIService.java` is correctly configured.
+    *   Ensure your computer has internet access and can reach `https://api.deepseek.com/`.
+    *   If the DeepSeek API is unavailable, the AI chat panel will fall back to the local `AIService.java` (simulated AI).
+*   **Charts Not Displaying or Incorrect**:
+    *   Ensure Maven has successfully downloaded the JFreeChart dependencies. Check the `Maven` tool window for any errors.
+*   **`ClassNotFoundException` or `NoClassDefFoundError`**:
+    *   This usually indicates that Maven failed to download or link a required dependency. Try `Reload All Maven Projects` in the Maven tool window. Check your `pom.xml` for correctness.
+*   **CSV Import Errors**:
+    *   Ensure the CSV file format matches the program's expectations (date format `yyyy-MM-dd`, column order, etc.).
+    *   Check error messages for specific line numbers and issues.
 
-## Installation and Running
-
-1. Ensure Java 11+ is installed
-2. Clone the repository: `git clone `
-3. Enter the project directory: `cd finance-tracker`
-4. Build the project with Maven: `mvn package`
-5. Run the application: `java -jar target/finance-tracker-1.0-SNAPSHOT-jar-with-dependencies.jar`
-
-## Project Structure
-
-```
-src/main/java/com/financetracker/
-├── controller/    # Controller classes
-├── model/         # Data model classes
-├── service/       # Service classes
-├── util/          # Utility classes
-├── view/          # View classes
-└── FinanceTrackerApp.java  # Program entry
-```
-
-## Known Limitations
-
-- User data and chat history are currently stored in memory only
-- Some UI elements require further internationalization
-- Chart styles need optimization for better readability
-- Data persistence implementation pending
-
-## License
-
-This project is licensed under the MIT License.
-
----
-
-# AI赋能个人财务追踪器
-
-一个智能化的个人财务管理应用，基于Java Swing开发，结合AI技术提供消费分析和财务建议。
-
-## 功能特点
-
-### 1. 多语言支持（部分实现）
-- 支持中文和英文界面
-- 可在登录界面、注册界面和主界面切换语言
-- 用户可以设置并保存语言偏好
-- 所有UI文本均支持国际化（各面板逐步完善中）
-
-### 2. 用户认证与安全
-- 用户注册功能，支持用户名、密码、邮箱和手机号码验证
-- 邮箱格式验证
-- 手机号格式验证（中国手机号）
-- 用户登录功能，支持密码加密存储
-- 双因素身份验证（2FA）
-- 安全退出功能
-
-### 3. 账户管理
-- 支持多种账户类型：银行账户、支付宝、微信支付、现金和其他
-- 账户创建、编辑和删除功能
-- 账户余额自动计算和更新
-- 显示账户详细信息和交易历史
-- 交易金额显示支持货币符号（¥）
-
-### 4. 交易记录
-- 支持收入和支出两种交易类型
-- 交易分类功能，支持自定义分类
-- 交易记录的创建、编辑和删除
-- 交易描述和金额记录
-- 自动生成唯一交易ID
-- 交易日期记录和管理
-
-### 5. 数据可视化与分析（样式持续改进中）
-- 仪表盘概览，展示财务状况摘要
-- 收入和支出的比例分析
-- 按类别的支出分析
-- 财务趋势图表
-- 月度收支对比
-- 支出类别饼图
-- 交易历史时间线
-- 概览面板支持按月选择数据
-- 仪表盘与概览面板解耦
-
-### 6. AI助手功能（核心交互已实现）
-- 基于用户选择的AI服务（如DeepSeek）
-- 智能对话和财务建议
-- 聊天界面功能：
-  * 清晰的标题栏
-  * 用户和AI消息气泡区分
-  * 用户和AI头像显示
-  * 时间戳显示
-  * 动态消息宽度
-  * 自动滚动聊天记录
-  * 输入框支持回车发送
-- DeepSeek AI API集成
-- 流式输出和打字效果
-- 交易数据上下文支持
-- 快速响应选项
-- 内存中聊天历史
-- API调用错误处理
-
-### 7. 数据导入导出
-- 支持CSV格式导入导出
-- 数据备份和恢复功能
-
-### 8. 预算管理
-- 设置月度和日常预算限额
-- 预算使用进度可视化
-- 超出预算警告
-- 按类别设置预算限额
-
-### 9. 自动分类功能
-- 基于交易描述自动分类
-- 智能识别常见交易类型
-- 异常支出检测
-- 季节性消费模式识别
-
-### 10. 用户界面与体验（持续优化）
-- 现代化UI设计，采用FlatLaf
-- 响应式界面布局
-- 自适应字体大小
-- 中文字符显示支持
-- 标签和帮助文本
-- 动态切换界面主题
-- 可自定义界面元素
-- 优化的UI间距和对齐
-
-### 11. 报表功能
-- 月度财务报表生成
-- 年度消费总结
-- 自定义时间段报表
-- 类别分析报表
-- 节省率计算
-
-### 12. 系统功能
-- 多平台支持（Windows, macOS, Linux）
-- 中文字体自动加载
-- 高级日志记录功能
-- 命令行参数支持
-- 自动字体检测和替换
-- UTF-8编码支持
-
-## 技术栈
-
-- Java Swing：构建用户界面
-- JFreeChart：数据可视化
-- Apache Commons CSV：处理CSV文件
-- Jackson：处理JSON数据
-- DeepLearning4j：AI功能支持
-- JUnit：单元测试框架
-
-## 系统架构
-
-采用MVC（Model-View-Controller）架构设计：
-
-- **模型层（Model）**：包含用户、账户、交易和分类等核心数据模型
-- **视图层（View）**：包含登录界面、主窗口、仪表盘、账户管理和AI聊天界面等
-- **控制器层（Controller）**：处理用户认证和业务逻辑
-
-## 系统要求
-
-- Java 11或更高版本
-- 推荐屏幕分辨率：1280x720或更高
-
-## 安装和运行
-
-1. 确保已安装Java 11+
-2. 克隆代码库：`git clone`
-3. 进入项目目录：`cd finance-tracker`
-4. 使用Maven构建项目：`mvn package`
-5. 运行应用：`java -jar target/finance-tracker-1.0-SNAPSHOT-jar-with-dependencies.jar`
-
-## 项目结构
-
-```
-src/main/java/com/financetracker/
-├── controller/    # 控制器类
-├── model/         # 数据模型类
-├── service/       # 服务类
-├── util/          # 工具类
-├── view/          # 视图类
-└── FinanceTrackerApp.java  # 程序入口
-```
-
-## 已知限制
-
-- 用户数据和聊天记录目前仅保存在内存中
-- 部分UI元素需要进一步完善国际化
-- 图表样式需要优化以提高可读性
-- 数据持久化实现待完成
-
-## 许可证
-
-本项目采用MIT许可证。
-
+This README should help you get the project set up and running smoothly!
