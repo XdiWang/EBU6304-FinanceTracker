@@ -25,6 +25,7 @@ public class Category {
     public static final Category EDUCATION = new Category("教育", "学费、书籍和课程", new Color(46, 139, 87), true, false);
     public static final Category HEALTH = new Category("医疗健康", "医院、药品和健身", new Color(220, 20, 60), true, false);
 
+    // 新增预定义
     // Added based on test.csv and common categories
     public static final Category MEDICAL = new Category("Medical", "Medical expenses, pharmacy, doctor visits",
             new Color(255, 105, 97), true, false); // Slightly different red from HEALTH if needed

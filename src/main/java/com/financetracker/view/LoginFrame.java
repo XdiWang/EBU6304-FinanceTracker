@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.regex.Pattern; // 引入正则表达式相关的类
+
 
 /**
  * 登录窗口 - 允许用户登录或注册
@@ -23,6 +25,14 @@ public class LoginFrame extends JFrame {
     private JLabel titleLabel;
     private JLabel usernameLabel;
     private JLabel passwordLabel;
+
+    // 正则表达式常量
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
+    );
+    private static final Pattern PHONE_PATTERN = Pattern.compile(
+            "^1[3-9]\\d{9}$" // 中国大陆11位手机号格式 (以1开头，第二位是3-9，后面9位数字)
+    );
 
     public LoginFrame() {
         userController = new UserController();
@@ -275,30 +285,23 @@ public class LoginFrame extends JFrame {
     // 显示两因素认证对话框，与原型图匹配
     private boolean showTwoFactorAuthDialog() {
         JDialog twoFactorDialog = new JDialog(this, LanguageUtil.getText("2fa.title"), true);
-        twoFactorDialog.setSize(550, 350);
-        twoFactorDialog.setLocationRelativeTo(this);
+        // REMOVED: twoFactorDialog.setSize(550, 350);
         twoFactorDialog.setLayout(new BorderLayout());
         twoFactorDialog.getContentPane().setBackground(new Color(240, 248, 255));
-
         // 创建标题栏
-        JPanel titleBarPanel = createTitleBarPanel();
+        JPanel titleBarPanel = createTitleBarPanel(); // 假设此方法已正确处理字体
         twoFactorDialog.add(titleBarPanel, BorderLayout.NORTH);
-
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setBackground(new Color(240, 248, 255));
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 10, 5, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
         // 电子邮件/电话号码输入
         JLabel contactLabel = new JLabel(LanguageUtil.getText("2fa.contact"));
         contactLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
-
         JTextField contactField = new JTextField(20);
         contactField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         contactField.setPreferredSize(new Dimension(300, 40));
-
         // 获取验证码按钮
         JButton getCodeButton = new JButton(LanguageUtil.getText("2fa.get_code"));
         getCodeButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
@@ -306,24 +309,20 @@ public class LoginFrame extends JFrame {
         getCodeButton.setForeground(Color.WHITE);
         getCodeButton.setFocusPainted(false);
         getCodeButton.setBorderPainted(false);
-
         // 验证码输入
         JLabel codeLabel = new JLabel(LanguageUtil.getText("2fa.enter_code"));
         codeLabel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
-
         JTextField codeField = new JTextField(10);
         codeField.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
         codeField.setPreferredSize(new Dimension(300, 40));
-
         // 登录和重新发送按钮
-        JButton loginButton = new JButton(LanguageUtil.getText("2fa.login"));
-        loginButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
-        loginButton.setBackground(Color.BLACK);
-        loginButton.setForeground(Color.WHITE);
-        loginButton.setFocusPainted(false);
-        loginButton.setBorderPainted(false);
-        loginButton.setPreferredSize(new Dimension(120, 45));
-
+        JButton loginButton2FA = new JButton(LanguageUtil.getText("2fa.login")); // 避免与LoginFrame的loginButton重名
+        loginButton2FA.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
+        loginButton2FA.setBackground(Color.BLACK);
+        loginButton2FA.setForeground(Color.WHITE);
+        loginButton2FA.setFocusPainted(false);
+        loginButton2FA.setBorderPainted(false);
+        loginButton2FA.setPreferredSize(new Dimension(120, 45));
         JButton resendButton = new JButton(LanguageUtil.getText("2fa.resend"));
         resendButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         resendButton.setBackground(Color.BLACK);
@@ -331,26 +330,22 @@ public class LoginFrame extends JFrame {
         resendButton.setFocusPainted(false);
         resendButton.setBorderPainted(false);
         resendButton.setPreferredSize(new Dimension(120, 45));
-
         // 添加联系方式和获取验证码按钮
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(contactLabel, gbc);
-
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.7;
         contentPanel.add(contactField, gbc);
-
         gbc.gridx = 1;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
         contentPanel.add(getCodeButton, gbc);
-
         // 添加验证码输入
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -358,68 +353,66 @@ public class LoginFrame extends JFrame {
         gbc.weightx = 1.0;
         gbc.anchor = GridBagConstraints.WEST;
         contentPanel.add(codeLabel, gbc);
-
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
         contentPanel.add(codeField, gbc);
-
         // 添加按钮
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
         buttonPanel.setBackground(new Color(240, 248, 255));
-        buttonPanel.add(loginButton);
+        buttonPanel.add(loginButton2FA);
         buttonPanel.add(resendButton);
-
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         contentPanel.add(buttonPanel, gbc);
-
         twoFactorDialog.add(contentPanel, BorderLayout.CENTER);
-
         // 生成验证码
         final String[] verificationCode = { generateVerificationCode() };
         System.out.println("生成验证码: " + verificationCode[0]);
-
-        // 添加按钮事件处理
-        getCodeButton.addActionListener(e -> {
+        // --- 修改 "获取验证码" 和 "重新发送" 按钮的事件处理 ---
+        ActionListener sendCodeAction = e -> {
             String contact = contactField.getText().trim();
             if (contact.isEmpty()) {
                 JOptionPane.showMessageDialog(twoFactorDialog,
-                        LanguageUtil.getText("2fa.error.contact"),
+                        LanguageUtil.getText("2fa.error.contact"), // "请输入电子邮箱或电话号码"
                         LanguageUtil.getText("2fa.error"),
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            verificationCode[0] = generateVerificationCode();
-            System.out.println("生成新验证码: " + verificationCode[0]);
-            JOptionPane.showMessageDialog(twoFactorDialog,
-                    LanguageUtil.getText("2fa.send.message") + " " + contact + "\n" + verificationCode[0],
-                    LanguageUtil.getText("2fa.send.success"),
-                    JOptionPane.INFORMATION_MESSAGE);
-        });
-
-        resendButton.addActionListener(e -> {
-            String contact = contactField.getText().trim();
-            if (contact.isEmpty()) {
+            // 验证格式
+            boolean isEmail = EMAIL_PATTERN.matcher(contact).matches();
+            boolean isPhone = PHONE_PATTERN.matcher(contact).matches();
+            if (!isEmail && !isPhone) {
+                String errorMessage = LanguageUtil.getText("register.error.email"); // "邮箱格式无效"
+                if (contact.matches("\\d+")) { // 如果输入的是数字，更可能是想输入手机号
+                    errorMessage = LanguageUtil.getText("register.error.phone"); // "手机号格式无效"
+                } else if (contact.contains("@")) { // 如果包含@，更可能是想输入邮箱
+                    errorMessage = LanguageUtil.getText("register.error.email");
+                } else {
+                    // 通用错误提示
+                    errorMessage = "请输入有效的邮箱或11位手机号码。";
+                }
                 JOptionPane.showMessageDialog(twoFactorDialog,
-                        LanguageUtil.getText("2fa.error.contact"),
-                        LanguageUtil.getText("2fa.error"),
+                        errorMessage,
+                        LanguageUtil.getText("2fa.error"), // "错误"
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
+            // 如果验证通过
             verificationCode[0] = generateVerificationCode();
-            System.out.println("重新发送验证码: " + verificationCode[0]);
+            System.out.println((e.getSource() == getCodeButton ? "生成新" : "重新发送") + "验证码: " + verificationCode[0]);
             JOptionPane.showMessageDialog(twoFactorDialog,
-                    LanguageUtil.getText("2fa.send.message") + " " + contact + "\n" + verificationCode[0],
+                    LanguageUtil.getText("2fa.send.message") + " " + contact + "\n(验证码: " + verificationCode[0] + ")", // 实际应用中不应显示验证码
                     LanguageUtil.getText("2fa.send.success"),
                     JOptionPane.INFORMATION_MESSAGE);
-        });
-
+        };
+        getCodeButton.addActionListener(sendCodeAction);
+        resendButton.addActionListener(sendCodeAction);
+        // --- 修改结束 ---
         final boolean[] verified = { false };
-
-        loginButton.addActionListener(e -> {
+        loginButton2FA.addActionListener(e -> {
             String code = codeField.getText().trim();
             if (code.isEmpty()) {
                 JOptionPane.showMessageDialog(twoFactorDialog,
@@ -428,7 +421,6 @@ public class LoginFrame extends JFrame {
                         JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
             if (code.equals(verificationCode[0])) {
                 verified[0] = true;
                 twoFactorDialog.dispose();
@@ -440,10 +432,12 @@ public class LoginFrame extends JFrame {
                 codeField.setText("");
             }
         });
-
+        twoFactorDialog.pack();
+        twoFactorDialog.setLocationRelativeTo(this);
         twoFactorDialog.setVisible(true);
         return verified[0];
     }
+
 
     private String generateVerificationCode() {
         // 生成6位随机数字验证码
@@ -453,7 +447,7 @@ public class LoginFrame extends JFrame {
 
     private void openRegisterDialog() {
         JDialog registerDialog = new JDialog(this, LanguageUtil.getText("register.title"), true);
-        registerDialog.setSize(450, 550);
+        registerDialog.setSize(500, 600);
         registerDialog.setLocationRelativeTo(this);
         registerDialog.setResizable(false);
 
@@ -514,14 +508,14 @@ public class LoginFrame extends JFrame {
         JButton registerButton = new JButton(LanguageUtil.getText("register.register"));
         registerButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         registerButton.setBackground(Color.BLACK);
-        registerButton.setForeground(Color.WHITE);
+        registerButton.setForeground(Color.BLACK);
         registerButton.setFocusPainted(false);
         registerButton.setPreferredSize(new Dimension(180, 45));
 
         JButton cancelButton = new JButton(LanguageUtil.getText("register.cancel"));
         cancelButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_BOLD));
         cancelButton.setBackground(Color.BLACK);
-        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setForeground(Color.BLACK);
         cancelButton.setFocusPainted(false);
         cancelButton.setPreferredSize(new Dimension(180, 45));
 
@@ -561,6 +555,7 @@ public class LoginFrame extends JFrame {
         // 语言切换按钮，允许在对话框中切换语言
         JPanel languagePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         languagePanel.setBackground(new Color(240, 248, 255));
+        languagePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         languagePanel.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
 
         JButton langChineseButton = new JButton("中文");
@@ -576,7 +571,7 @@ public class LoginFrame extends JFrame {
 
         JButton langEnglishButton = new JButton("English");
         langEnglishButton.setFont(FontLoader.getFont(FontLoader.FONT_SIZE_MEDIUM, FontLoader.STYLE_PLAIN));
-        langEnglishButton.setPreferredSize(new Dimension(80, 30));
+        langEnglishButton.setPreferredSize(new Dimension(110, 30));
         langEnglishButton.addActionListener(e -> {
             LanguageUtil.setCurrentLanguage(LanguageUtil.ENGLISH);
             updateRegisterDialogTexts(registerDialog, usernameLabel, passwordLabel, confirmPasswordLabel,
@@ -593,6 +588,7 @@ public class LoginFrame extends JFrame {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 20, 0)); // 上下各加30px
         buttonPanel.setBackground(new Color(240, 248, 255));
         buttonPanel.add(registerButton);
         buttonPanel.add(cancelButton);
@@ -681,8 +677,8 @@ public class LoginFrame extends JFrame {
      * 更新注册对话框的文本标签
      */
     private void updateRegisterDialogTexts(JDialog dialog, JLabel usernameLabel, JLabel passwordLabel,
-            JLabel confirmPasswordLabel, JLabel emailLabel, JLabel phoneLabel,
-            JButton registerButton, JButton cancelButton) {
+                                           JLabel confirmPasswordLabel, JLabel emailLabel, JLabel phoneLabel,
+                                           JButton registerButton, JButton cancelButton) {
 
         // 更新标签文本
         usernameLabel.setText(LanguageUtil.getText("register.username"));

@@ -17,6 +17,7 @@ public class Transaction {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static int transactionCounter = 1000;
 
+    // 使用枚举法
     public enum TransactionType {
         INCOME("收入"),
         EXPENSE("支出");
@@ -111,6 +112,7 @@ public class Transaction {
         this.account = account;
     }
 
+    // 改写生成字符串的方法
     @Override
     public String toString() {
         String formattedAmount = String.format("%.2f", amount);
