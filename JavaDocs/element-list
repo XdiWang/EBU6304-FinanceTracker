@@ -1,0 +1,7 @@
+com.financetracker
+com.financetracker.controller
+com.financetracker.model
+com.financetracker.service
+com.financetracker.util
+com.financetracker.view
+com.financetracker.view.utils
