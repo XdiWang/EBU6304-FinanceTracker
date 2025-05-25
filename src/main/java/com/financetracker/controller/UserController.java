@@ -12,6 +12,7 @@ import java.util.Map;
 public class UserController {
 
     // 使用内存中的用户存储，实际应用中应使用文件或数据库
+    //使用HashMap临时储存
     private Map<String, User> userMap;
     private User currentUser;
 
