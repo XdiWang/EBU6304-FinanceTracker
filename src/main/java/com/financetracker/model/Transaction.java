@@ -13,9 +13,11 @@ public class Transaction {
     private String description;
     private Category category;
     private TransactionType type;
+    private Account account;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static int transactionCounter = 1000;
 
+    // 使用枚举法
     public enum TransactionType {
         INCOME("收入"),
         EXPENSE("支出");
@@ -31,13 +33,15 @@ public class Transaction {
         }
     }
 
-    public Transaction(LocalDate date, double amount, String description, Category category, TransactionType type) {
-        this.id = generateId();
+    public Transaction(String id, LocalDate date, double amount, String description, Category category,
+            TransactionType type, Account account) {
+        this.id = id;
         this.date = date;
         this.amount = amount;
         this.description = description;
         this.category = category;
         this.type = type;
+        this.account = account;
     }
 
     /**
@@ -100,6 +104,15 @@ public class Transaction {
         this.type = type;
     }
 
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
+    }
+
+    // 改写生成字符串的方法
     @Override
     public String toString() {
         String formattedAmount = String.format("%.2f", amount);
