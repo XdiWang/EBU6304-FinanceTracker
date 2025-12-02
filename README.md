@@ -62,7 +62,7 @@ This is a Java Swing-based desktop application designed to help users track thei
     *   Open the file: `src/main/java/com/financetracker/service/DeepSeekAPIService.java`
     *   Locate the line:
         ```java
-        private static final String API_KEY = "sk-a504d43d17754171bc4aecbc6a4e0dd2"; // Replace with your API key
+        private static final String API_KEY = "xxxxxxxxx"; // Replace with your API key
         ```
     *   Replace `"sk-a504d43d17754171bc4aecbc6a4e0dd2"` with your actual DeepSeek API key.
     *   **Note**: If this key is not configured or is invalid, the DeepSeek AI chat feature will not work correctly and may fall back to the local simulated AI.
@@ -124,3 +124,4 @@ This is a Java Swing-based desktop application designed to help users track thei
     *   Check error messages for specific line numbers and issues.
 
 This README should help you get the project set up and running smoothly!
+
