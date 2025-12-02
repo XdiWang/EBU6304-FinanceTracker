@@ -27,7 +27,7 @@ public class DeepSeekAPIService {
     private static final Logger LOGGER = Logger.getLogger(DeepSeekAPIService.class.getName());
 
     private static final String API_URL = "https://api.deepseek.com/chat/completions";
-    private static final String API_KEY = "sk-a504d43d17754171bc4aecbc6a4e0dd2"; // 替换为您的API密钥
+    private static final String API_KEY = "xxxxxxxxxx"; // 替换为您的API密钥
     private static final String MODEL = "deepseek-chat";
 
     private final HttpClient client;
@@ -301,3 +301,4 @@ public class DeepSeekAPIService {
         }
     }
 }
+
